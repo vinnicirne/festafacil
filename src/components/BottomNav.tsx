@@ -12,8 +12,8 @@ export default function BottomNav(){
     <nav className="bottom-nav" aria-label="Navegação inferior">
       <div className="inner">
         {item('/', 'Home', '🏠')}
-        {item('/busca', 'Contratar', '🛒')}
-        {item('/painel/usuario', 'Login', '👤')}
+        {item('/cadastro-cliente', 'Contratar', '🛒')}
+        {item('/cadastro-cliente', 'Login', '👤')}
       </div>
     </nav>
   )

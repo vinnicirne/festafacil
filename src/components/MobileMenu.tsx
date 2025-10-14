@@ -41,8 +41,8 @@ export default function MobileMenu({ open, onClose }: Props){
 
           <div className="drawer-ctas">
             <Link className="btn drawer-btn drawer-btn--dark" to="/para-empresas" onClick={onClose}>Para Empresas</Link>
-            <Link className="btn drawer-btn drawer-btn--accent" to="/painel/fornecedor" onClick={onClose}>Sou Fornecedor</Link>
-            <Link className="btn drawer-btn drawer-btn--primary" to="/busca" onClick={onClose}>Quero Contratar</Link>
+            <Link className="btn drawer-btn drawer-btn--accent" to="/cadastro-fornecedor" onClick={onClose}>Sou Fornecedor</Link>
+            <Link className="btn drawer-btn drawer-btn--primary" to="/cadastro-cliente" onClick={onClose}>Quero Contratar</Link>
             <Link className="btn drawer-btn drawer-btn--success" to="/instalar" onClick={onClose}>Instalar App</Link>
           </div>
         </nav>
