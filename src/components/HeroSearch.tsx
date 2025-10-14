@@ -215,7 +215,7 @@ export default function HeroSearch(){
 function SuppliersModal({ open, onClose, providers, loading, error, cep, servico, onCepChange, onSearch, onLocate }: { open:boolean; onClose:()=>void; providers: Service[]; loading:boolean; error?: string; cep: string; servico: string; onCepChange: (v:string)=>void; onSearch: ()=>void; onLocate: ()=>void }){
   const navigate = useNavigate()
   return (
-    <Modal open={open} onClose={onClose} title="Fornecedores próximos">
+    <Modal open={open} onClose={onClose} title="Fornecedores próximos" size="lg">
       <div style={{display:'grid', gap:'.8rem'}}>
         <div style={{display:'grid', gap:'.6rem'}}>
           <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
