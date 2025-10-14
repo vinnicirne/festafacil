@@ -83,9 +83,10 @@ export default function ProviderDashboard(){
     })
   }, [leads])
 
+  type ChatMsg = { from:'user'|'vendor', text:string, ts:string }
   const leadKey = (l:any)=> `${(l.providerId||'')}:${(l.contato||'')}:${(l.createdAt||'')}`
-  const getMsgs = (l:any)=> getStore<{from:'user'|'vendor', text:string, ts:string}[]>(`chat:${leadKey(l)}`, [])
-  const setMsgs = (l:any, msgs:{from:'user'|'vendor', text:string, ts:string}[])=> setStore(`chat:${leadKey(l)}`, msgs)
+  const getMsgs = (l:any)=> getStore<ChatMsg[]>(`chat:${leadKey(l)}`, [] as ChatMsg[])
+  const setMsgs = (l:any, msgs:ChatMsg[])=> setStore(`chat:${leadKey(l)}`, msgs)
 
   const setLead = (idx:number, updates:any)=>{
     const next = [...leads]
@@ -100,7 +101,7 @@ export default function ProviderDashboard(){
     if(!text) return
     const l = leads[selectedLeadIdx]
     const msgs = getMsgs(l)
-    const next = [...msgs, { from:'vendor', text, ts: new Date().toISOString() }]
+    const next: ChatMsg[] = [...msgs, { from:'vendor' as const, text, ts: new Date().toISOString() }]
     setMsgs(l, next)
     setChatText('')
     if(!l.respondedAt) setLead(selectedLeadIdx, { respondedAt: new Date().toISOString() })
@@ -129,7 +130,8 @@ export default function ProviderDashboard(){
     const paymentLink = `/checkout?lead=${encodeURIComponent(leadKey(l))}`
     setLead(selectedLeadIdx, { quoteAmount: gross, quoteSentAt: new Date().toISOString(), status: 'Orçamento Enviado', paymentLink })
     const msgs = getMsgs(l)
-    setMsgs(l, [...msgs, { from:'vendor', text: `Orçamento enviado: ${formatMoney(gross)} • Comissão: ${formatMoney(commission)} • Líquido: ${formatMoney(net)} • Link: ${paymentLink}`, ts: new Date().toISOString() }])
+    const quoteMsg: ChatMsg = { from:'vendor', text: `Orçamento enviado: ${formatMoney(gross)} • Comissão: ${formatMoney(commission)} • Líquido: ${formatMoney(net)} • Link: ${paymentLink}`, ts: new Date().toISOString() }
+    setMsgs(l, [...msgs, quoteMsg])
     setQuoteOpen(false)
     setQuoteAmount(0)
     if(!l.respondedAt) setLead(selectedLeadIdx, { respondedAt: new Date().toISOString() })
