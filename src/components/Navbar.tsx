@@ -120,8 +120,8 @@ export default function Navbar(){
         <div className="navbar-actions" style={{display:'flex', alignItems:'center', gap:'.5rem'}}>
           {isHome ? (
             <>
-              <Link to="/cadastro-fornecedor" style={{fontSize:'.98rem', fontWeight:600, color:'#111', textDecoration:'none'}}>Fornecedores</Link>
-              <Link to="/cadastro-cliente" className="btn btn-primary" style={{padding:'.4rem .8rem', borderRadius:12, display:'inline-flex', alignItems:'center', gap:'.4rem', textTransform:'none'}}>
+              <Link to="/auth?role=fornecedor" style={{fontSize:'.98rem', fontWeight:600, color:'#111', textDecoration:'none'}}>Fornecedores</Link>
+              <Link to="/auth?role=cliente" className="btn btn-primary" style={{padding:'.4rem .8rem', borderRadius:12, display:'inline-flex', alignItems:'center', gap:'.4rem', textTransform:'none'}}>
                 <UserIcon />
                 Entrar
               </Link>
