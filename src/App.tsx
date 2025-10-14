@@ -12,6 +12,8 @@ const ProviderDashboard = lazy(() => import('./pages/ProviderDashboard'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const About = lazy(() => import('./pages/About'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const SignupUser = lazy(() => import('./pages/SignupUser'))
+const SignupProvider = lazy(() => import('./pages/SignupProvider'))
 
 export default function App() {
   const location = useLocation()
@@ -30,6 +32,8 @@ export default function App() {
             <Route path="/busca" element={<Search />} />
             <Route path="/fornecedor/:id" element={<ProviderDetails />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/cadastro-cliente" element={<SignupUser />} />
+            <Route path="/cadastro-fornecedor" element={<SignupProvider />} />
             <Route path="/painel/fornecedor" element={<ProviderDashboard />} />
             <Route path="/painel/usuario" element={<UserDashboard />} />
             <Route path="/painel/admin" element={<AdminDashboard />} />
