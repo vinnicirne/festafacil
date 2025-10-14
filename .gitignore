@@ -1,0 +1,26 @@
+# Vercel
+.vercel
+
+# Node
+node_modules/
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# Build outputs
+dist/
+.cache/
+
+# Env/keys
+.env.local
+.env
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+node_modules
