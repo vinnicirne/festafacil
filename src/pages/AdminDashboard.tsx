@@ -8,9 +8,11 @@ type Lead = { providerId?: string; providerName?: string; nome: string; contato:
 export default function AdminDashboard(){
   const [providers, setProviders] = useState<{id:string, name:string, category:string}[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
+  const [pendingCats, setPendingCats] = useState<{suggestion:string, fromBrand?:string, contactEmail?:string, createdAt?:string}[]>([])
 
   useEffect(()=>{ let on=true; getProviders().then(list=>{ if(!on) return; setProviders(list.map(p=>({id:p.id, name:p.name, category:p.category}))) }); return ()=>{ on=false } }, [])
   useEffect(()=>{ try{ const raw = localStorage.getItem('leads'); setLeads(raw? JSON.parse(raw): []) }catch{} }, [])
+  useEffect(()=>{ try{ const raw = localStorage.getItem('admin:pendingCategories'); setPendingCats(raw? JSON.parse(raw): []) }catch{} }, [])
 
   const stats = useMemo(()=>({
     providers: providers.length,
@@ -23,6 +25,24 @@ export default function AdminDashboard(){
   })))
 
   const clearLeads = ()=>{ localStorage.setItem('leads', JSON.stringify([])); setLeads([]) }
+
+  const approveCat = (idx:number)=>{
+    const entry = pendingCats[idx]
+    try{
+      const raw = localStorage.getItem('admin:approvedCategories')
+      const approved = raw ? JSON.parse(raw) as any[] : []
+      approved.push({ ...entry, approvedAt: new Date().toISOString() })
+      localStorage.setItem('admin:approvedCategories', JSON.stringify(approved))
+    }catch{}
+    const next = pendingCats.filter((_,i)=> i!==idx)
+    setPendingCats(next)
+    localStorage.setItem('admin:pendingCategories', JSON.stringify(next))
+  }
+  const rejectCat = (idx:number)=>{
+    const next = pendingCats.filter((_,i)=> i!==idx)
+    setPendingCats(next)
+    localStorage.setItem('admin:pendingCategories', JSON.stringify(next))
+  }
 
   const byProvider = useMemo(()=>{
     const map = new Map<string, number>()
@@ -80,6 +100,28 @@ export default function AdminDashboard(){
                     <div style={{color:'var(--color-muted)'}}>Leads: {x.count}</div>
                   </div>
                   {x.id && <Link to={`/fornecedor/${x.id}`} className="btn btn-secondary">Abrir</Link>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem'}}>
+          <h2 style={{margin:0}}>Categorias sugeridas (pendentes)</h2>
+          {pendingCats.length === 0 ? (
+            <small style={{color:'var(--color-muted)'}}>Nenhuma sugestão pendente.</small>
+          ) : (
+            <div className="grid">
+              {pendingCats.map((p, i)=> (
+                <div key={p.suggestion + i} className="card" style={{padding:'.8rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+                  <div>
+                    <strong>{p.suggestion}</strong>
+                    <div style={{color:'var(--color-muted)'}}>De: {p.fromBrand || 'Fornecedor'} {p.contactEmail? `• ${p.contactEmail}`:''}</div>
+                  </div>
+                  <div style={{display:'flex', gap:'.4rem'}}>
+                    <button className="btn btn-secondary" onClick={()=> approveCat(i)}>Aprovar</button>
+                    <button className="btn" onClick={()=> rejectCat(i)}>Recusar</button>
+                  </div>
                 </div>
               ))}
             </div>

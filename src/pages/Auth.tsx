@@ -23,7 +23,7 @@ export default function Auth(){
   const [sp] = useSearchParams()
   const [open, setOpen] = useState(true)
   const [role, setRole] = useState<Role>((sp.get('role') as Role) || 'cliente')
-  const [mode, setMode] = useState<Mode>('login')
+  const [mode, setMode] = useState<Mode>((sp.get('mode') as Mode) || 'login')
 
   useEffect(()=>{ if(!open) navigate(-1) }, [open])
 
@@ -80,7 +80,7 @@ export default function Auth(){
     if(!cAllOk) return
     localStorage.setItem('ff:client', JSON.stringify({ nome:cNome, email:cEmail, phone:cPhone, cep:cCep, addr:cAddr, city:cCity, uf:cUf }))
     setOpen(false)
-    navigate('/checkout')
+    navigate('/cadastro-cliente')
   }
   const submitFornecedorPrimeiroPasso = (e:React.FormEvent)=>{
     e.preventDefault()
@@ -100,19 +100,19 @@ export default function Auth(){
         </div>
 
         {mode==='login' && (
-          <form className="card" style={{padding:'1rem', border:'2px solid #e3d5df'}} onSubmit={(e)=>{ e.preventDefault(); alert('Login demonstrativo'); }}>
+          <form className="card auth-form" onSubmit={(e)=>{ e.preventDefault(); alert('Login demonstrativo'); }}>
             <label style={{marginBottom:'.3rem'}}>Qual foi seu e-mail de cadastro?</label>
             <input type="email" value={loginEmail} onChange={e=> setLoginEmail(e.target.value)} placeholder="e-mail" required />
             <div style={{height:'.6rem'}} />
             <label style={{marginBottom:'.3rem'}}>Senha</label>
             <input type="password" value={loginPwd} onChange={e=> setLoginPwd(e.target.value)} placeholder="Senha" required />
             <div style={{height:'.8rem'}} />
-            <button className="btn" style={{background:'#0b6', color:'#fff', width:'100%'}}>acessar</button>
+            <button className="btn btn-secondary">acessar</button>
           </form>
         )}
 
         {mode==='signup' && role==='cliente' && (
-          <form className="card" onSubmit={submitCliente} style={{padding:'1rem'}}>
+          <form className="card auth-form" onSubmit={submitCliente}>
             <div className="grid" style={{display:'grid', gap:'.6rem'}}>
               <input value={cNome} onChange={e=> setCNome(e.target.value)} placeholder="Nome completo" required />
               <input type="email" value={cEmail} onChange={e=> setCEmail(e.target.value)} placeholder="e-mail" required />
@@ -120,30 +120,28 @@ export default function Auth(){
               <input value={cPhone} onChange={e=> setCPhone(maskPhone(e.target.value))} placeholder="Telefone (WhatsApp)" required />
               <div style={{display:'flex', gap:'.6rem', alignItems:'center'}}>
                 <input value={cCep} onChange={e=> setCCep(maskCEP(e.target.value))} placeholder="CEP" required />
-                <small aria-live="polite" style={{color:'var(--text-muted)'}}>{loadingCep? 'buscando endereço…':''}</small>
+                <small aria-live="polite" style={{color:'var(--color-muted)'}}>{loadingCep? 'buscando endereço…':''}</small>
               </div>
               <input value={cAddr} onChange={e=> setCAddr(e.target.value)} placeholder="Endereço" required />
               <div style={{display:'grid', gridTemplateColumns:'1fr 80px', gap:'.6rem'}}>
                 <input value={cCity} onChange={e=> setCCity(e.target.value)} placeholder="Cidade" />
                 <input value={cUf} onChange={e=> setCUf(e.target.value.toUpperCase().slice(0,2))} placeholder="UF" />
               </div>
-              <button className="btn btn-primary" disabled={!cAllOk}>concluir cadastro</button>
+              <button className="btn btn-primary" disabled={!cAllOk}>concluir cadastro de contratante</button>
             </div>
           </form>
         )}
 
         {mode==='signup' && role==='fornecedor' && (
-          <form className="card" onSubmit={submitFornecedorPrimeiroPasso} style={{padding:'1rem'}}>
-            <div className="grid" style={{display:'grid', gap:'.6rem'}}>
-              <input value={fMarca} onChange={e=> setFMarca(e.target.value)} placeholder="Nome da Empresa/Marca" required />
-              <input value={fDoc} onChange={e=> setFDoc(e.target.value)} placeholder="CNPJ ou CPF" required />
-              <input value={fContato} onChange={e=> setFContato(e.target.value)} placeholder="Contato principal" required />
-              <input type="email" value={fEmail} onChange={e=> setFEmail(e.target.value)} placeholder="e-mail" required />
-              <input value={fPhone} onChange={e=> setFPhone(maskPhone(e.target.value))} placeholder="Telefone (WhatsApp)" required />
-              <input type="password" value={fPwd} onChange={e=> setFPwd(e.target.value)} placeholder="Senha (mín. 8)" minLength={8} required />
-              <button className="btn btn-primary" disabled={!fOk}>continuar cadastro</button>
-            </div>
-          </form>
+          <div className="card auth-form">
+            <p style={{marginTop:0}}>
+              O cadastro de fornecedor é feito em um formulário dedicado com 3 etapas.
+              Clique abaixo para ir direto para o formulário completo.
+            </p>
+            <button className="btn btn-primary" onClick={()=>{ setOpen(false); navigate('/cadastro-fornecedor') }}>
+              ir para cadastro de fornecedor
+            </button>
+          </div>
         )}
 
         <div style={{display:'grid', gap:'.6rem', alignItems:'center', justifyItems:'center'}}>

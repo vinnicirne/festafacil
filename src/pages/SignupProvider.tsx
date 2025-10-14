@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchViaCEP } from '@/utils/viacep'
 import { CATEGORIES } from '@/data/categories'
@@ -14,6 +14,7 @@ type Provider = {
   phone: string
   password: string
   categories: string[]
+  pendingCategory?: string
   shortDescription: string
   baseCep: string
   serviceRadiusKm: number | ''
@@ -46,9 +47,29 @@ export default function SignupProvider(){
 
   const [data, setData] = useState<Provider>({
     brandName:'', taxId:'', contactName:'', email:'', phone:'', password:'',
-    categories:[], shortDescription:'', baseCep:'', serviceRadiusKm:'', socialUrl:'',
+    categories:[], pendingCategory:'', shortDescription:'', baseCep:'', serviceRadiusKm:'', socialUrl:'',
     pixKey:'', termsAccepted:false, plan:'BASICO'
   })
+
+  // Prefill from modal seed to avoid retyping duplicated fields
+  useEffect(()=>{
+    try{
+      const raw = localStorage.getItem('ff:provider:seed')
+      if(raw){
+        const s = JSON.parse(raw) as { marca?:string, doc?:string, contato?:string, email?:string, phone?:string }
+        setData(prev=>({
+          ...prev,
+          brandName: prev.brandName || s.marca || '',
+          taxId: prev.taxId || s.doc || '',
+          contactName: prev.contactName || s.contato || '',
+          email: prev.email || s.email || '',
+          phone: prev.phone || (s.phone ? maskPhone(String(s.phone)) : '')
+        }))
+        // Clear seed to prevent stale fills on later visits
+        localStorage.removeItem('ff:provider:seed')
+      }
+    }catch{ /* ignore malformed seed */ }
+  }, [])
 
   const step1Ok = useMemo(()=>{
     return (
@@ -62,7 +83,7 @@ export default function SignupProvider(){
   }, [data])
   const step2Ok = useMemo(()=>{
     return (
-      data.categories.length>0 &&
+      (data.categories.filter(c=> c !== 'Outros').length>0 || (data.pendingCategory||'').trim().length>0) &&
       data.shortDescription.trim().length>0 && data.shortDescription.length<=250 &&
       data.baseCep.replace(/\D/g,'').length===8 &&
       !!data.serviceRadiusKm
@@ -82,10 +103,19 @@ export default function SignupProvider(){
   }
 
   const onToggleCategory = (c: string)=>{
-    setData(prev=> ({
-      ...prev,
-      categories: prev.categories.includes(c) ? prev.categories.filter(x=>x!==c) : [...prev.categories, c]
-    }))
+    if(c==='Outros'){
+      const has = data.categories.includes('Outros')
+      setData(prev=> ({
+        ...prev,
+        categories: has ? prev.categories.filter(x=>x!=='Outros') : [...prev.categories, 'Outros'],
+        pendingCategory: has ? '' : (prev.pendingCategory||'')
+      }))
+    } else {
+      setData(prev=> ({
+        ...prev,
+        categories: prev.categories.includes(c) ? prev.categories.filter(x=>x!==c) : [...prev.categories, c]
+      }))
+    }
   }
 
   const next = async ()=>{
@@ -104,6 +134,20 @@ export default function SignupProvider(){
     if(!step3Ok){ setTouched(t=>({...t, step3:true})); return }
     const payload = { ...data, createdAt: new Date().toISOString() }
     localStorage.setItem('ff:provider', JSON.stringify(payload))
+    // Registrar sugestão de categoria para aprovação do Superadmin, se houver
+    if((data.pendingCategory||'').trim()){
+      try{
+        const raw = localStorage.getItem('admin:pendingCategories')
+        const list = raw ? JSON.parse(raw) as any[] : []
+        list.push({
+          suggestion: (data.pendingCategory||'').trim(),
+          fromBrand: data.brandName,
+          contactEmail: data.email,
+          createdAt: new Date().toISOString()
+        })
+        localStorage.setItem('admin:pendingCategories', JSON.stringify(list))
+      }catch{ /* ignore */ }
+    }
     navigate('/painel/fornecedor?onboarding=catalogo', { replace:false })
   }
 
@@ -141,7 +185,7 @@ export default function SignupProvider(){
       </div>
 
       {step===1 && (
-        <div className="card" style={{padding:'1rem', borderRadius:12}}>
+        <div className="card auth-form" style={{padding:'1rem', borderRadius:12}}>
           <h2 style={{marginTop:0}}>Dados Básicos e Contato</h2>
           <div className="grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.8rem'}}>
             <div>
@@ -167,7 +211,7 @@ export default function SignupProvider(){
             <div>
               <label>Senha</label>
               <input type="password" value={data.password} onChange={e=> onChange('password', e.target.value)} minLength={8} />
-              <small style={{color:'var(--text-muted)'}}>Mínimo de 8 caracteres.</small>
+              <small style={{color:'var(--color-muted)'}}>Mínimo de 8 caracteres.</small>
             </div>
           </div>
           <div style={{display:'flex', justifyContent:'space-between', marginTop:'1rem'}}>
@@ -178,20 +222,27 @@ export default function SignupProvider(){
       )}
 
       {step===2 && (
-        <div className="card" style={{padding:'1rem', borderRadius:12}}>
+        <div className="card auth-form" style={{padding:'1rem', borderRadius:12}}>
           <h2 style={{marginTop:0}}>Definição do Serviço e Localização</h2>
           <div>
             <label>Categorias de Serviço</label>
             <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
-              {CATEGORIES.map(c => (
+              {[...CATEGORIES, 'Outros'].map(c => (
                 <button key={c} type="button" className={`btn ${data.categories.includes(c) ? 'btn-primary' : ''}`} onClick={()=> onToggleCategory(c)} style={{textTransform:'none'}}>{c}</button>
               ))}
             </div>
+            {data.categories.includes('Outros') && (
+              <div style={{marginTop:'.6rem'}}>
+                <label>Descreva sua categoria</label>
+                <input value={data.pendingCategory||''} onChange={e=> setData(prev=>({...prev, pendingCategory: e.target.value }))} placeholder="Ex.: Personagens vivos, Carrinhos gourmet..." />
+                <small style={{color:'var(--color-muted)'}}>Sua sugestão ficará pendente de aprovação no Painel do Superadmin.</small>
+              </div>
+            )}
           </div>
           <div style={{marginTop:'.8rem'}}>
             <label>Mini-Descrição</label>
             <textarea value={data.shortDescription} onChange={e=> onChange('shortDescription', e.target.value)} maxLength={250} rows={3} />
-            <small style={{color:'var(--text-muted)'}}>{data.shortDescription.length}/250</small>
+            <small style={{color:'var(--color-muted)'}}>{data.shortDescription.length}/250</small>
           </div>
           <div className="grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.8rem', marginTop:'.8rem'}}>
             <div>
@@ -221,7 +272,7 @@ export default function SignupProvider(){
       )}
 
       {step===3 && (
-        <div className="card" style={{padding:'1rem', borderRadius:12}}>
+        <div className="card auth-form" style={{padding:'1rem', borderRadius:12}}>
           <h2 style={{marginTop:0}}>Financeiro e Termos</h2>
           <div>
             <label>Dados Bancários (Chave PIX)</label>
@@ -239,7 +290,7 @@ export default function SignupProvider(){
             <button className="btn" type="button" onClick={exportar}>Exportar para Planilhas</button>
             <div style={{display:'flex', gap:'.6rem'}}>
               <button className="btn" type="button" onClick={back}>Voltar</button>
-              <button className="btn btn-primary" type="button" disabled={!step3Ok} onClick={finish}>Concluir cadastro</button>
+              <button className="btn btn-primary" type="button" disabled={!step3Ok} onClick={finish}>Concluir cadastro de fornecedor</button>
             </div>
           </div>
         </div>
