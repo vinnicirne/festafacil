@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF3CD"/>
+      <stop offset="1" stop-color="#FFE082"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC107"/>
+      <stop offset="1" stop-color="#FF9800"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="#ffffff"/>
+  <rect x="60" y="60" width="1080" height="120" rx="24" fill="url(#accent)"/>
+  <text x="90" y="135" font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'" font-size="60" font-weight="700" fill="#2b2b2b">Festa Fácil</text>
+  <text x="90" y="220" font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'" font-size="36" fill="#5b5b5b">Sua festa começa aqui</text>
+  <g transform="translate(920, 90)">
+    <circle cx="60" cy="60" r="46" fill="#ffffff"/>
+    <circle cx="60" cy="60" r="40" fill="#fffae6"/>
+    <circle cx="60" cy="60" r="34" fill="#FFC107"/>
+    <path d="M60 110c-12 18 12 18 0 36" stroke="#FF9800" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="60" cy="120" r="6" fill="#FF9800"/>
+  </g>
+  <g opacity="0.35">
+    <circle cx="220" cy="420" r="6" fill="#FFC107"/>
+    <circle cx="300" cy="500" r="4" fill="#FF9800"/>
+    <circle cx="900" cy="480" r="5" fill="#FFC107"/>
+    <rect x="820" y="420" width="8" height="8" fill="#FF9800"/>
+    <rect x="360" y="460" width="10" height="10" fill="#FFC107"/>
+  </g>
+  <text x="90" y="290" font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'" font-size="28" fill="#333">Encontre fornecedores confiáveis: buffet, decoração, DJs e mais perto de você.</text>
+  <text x="90" y="340" font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'" font-size="24" fill="#555">Busque por categoria, compare avaliações e fale direto com o prestador.</text>
+</svg>

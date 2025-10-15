@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchViaCEP } from '@/utils/viacep'
 import { CATEGORIES } from '@/data/categories'
-import { exportCsv } from '@/utils/export'
+import { PLAN_CONFIG, type ProviderPlan, getPlanLabel } from '@/utils/saas'
+import { getSupabase } from '@/utils/supabase'
+import { signUpProvider } from '@/utils/auth'
+import { isValidCPFOrCNPJ, isValidPhone } from '@/utils/validators'
 
 type Step = 1|2|3
 
@@ -21,7 +24,7 @@ type Provider = {
   socialUrl?: string
   pixKey: string
   termsAccepted: boolean
-  plan: 'BASICO'
+  plan: ProviderPlan
 }
 
 function maskPhone(v: string){
@@ -48,7 +51,7 @@ export default function SignupProvider(){
   const [data, setData] = useState<Provider>({
     brandName:'', taxId:'', contactName:'', email:'', phone:'', password:'',
     categories:[], pendingCategory:'', shortDescription:'', baseCep:'', serviceRadiusKm:'', socialUrl:'',
-    pixKey:'', termsAccepted:false, plan:'BASICO'
+    pixKey:'', termsAccepted:false, plan:'GRATIS'
   })
 
   // Prefill from modal seed to avoid retyping duplicated fields
@@ -72,11 +75,13 @@ export default function SignupProvider(){
   }, [])
 
   const step1Ok = useMemo(()=>{
+    const taxIdOk = isValidCPFOrCNPJ(data.taxId)
+    const phoneOk = isValidPhone(data.phone)
     return (
       data.brandName.trim().length>1 &&
-      data.taxId.replace(/\D/g,'').length>=11 &&
+      taxIdOk &&
       /.+@.+\..+/.test(data.email) &&
-      data.phone.replace(/\D/g,'').length===11 &&
+      phoneOk &&
       data.password.length>=8 &&
       data.contactName.trim().length>1
     )
@@ -102,19 +107,15 @@ export default function SignupProvider(){
     setData(prev => ({ ...prev, [k]: v }))
   }
 
-  const onToggleCategory = (c: string)=>{
-    if(c==='Outros'){
-      const has = data.categories.includes('Outros')
-      setData(prev=> ({
-        ...prev,
-        categories: has ? prev.categories.filter(x=>x!=='Outros') : [...prev.categories, 'Outros'],
-        pendingCategory: has ? '' : (prev.pendingCategory||'')
-      }))
+  const onSelectCategory = (value: string)=>{
+    if(!value){
+      setData(prev=> ({ ...prev, categories: [], pendingCategory: '' }))
+      return
+    }
+    if(value==='Outros'){
+      setData(prev=> ({ ...prev, categories: ['Outros'] }))
     } else {
-      setData(prev=> ({
-        ...prev,
-        categories: prev.categories.includes(c) ? prev.categories.filter(x=>x!==c) : [...prev.categories, c]
-      }))
+      setData(prev=> ({ ...prev, categories: [value], pendingCategory: '' }))
     }
   }
 
@@ -130,44 +131,43 @@ export default function SignupProvider(){
   }
   const back = ()=> setStep(s=> (s>1 ? ((s-1) as Step) : s))
 
-  const finish = ()=>{
+  const finish = async ()=>{
     if(!step3Ok){ setTouched(t=>({...t, step3:true})); return }
     const payload = { ...data, createdAt: new Date().toISOString() }
+    const sb = getSupabase()
+    if(sb){
+      try{
+        await signUpProvider({ email: data.email, password: data.password, brandName: data.brandName, plan: data.plan, taxId: data.taxId, phone: data.phone, pixKey: data.pixKey })
+        // Sugestão de categoria local (aprovada via Superadmin)
+        if((data.pendingCategory||'').trim()){
+          try{
+            const raw = localStorage.getItem('admin:pendingCategories')
+            const list = raw ? JSON.parse(raw) as any[] : []
+            list.push({ suggestion: (data.pendingCategory||'').trim(), fromBrand: data.brandName, contactEmail: data.email, createdAt: new Date().toISOString() })
+            localStorage.setItem('admin:pendingCategories', JSON.stringify(list))
+          }catch{}
+        }
+        alert('Cadastro enviado e pendente de validação. Você será avisado após aprovação.')
+        navigate('/', { replace:false })
+        return
+      } catch(err){
+        alert('Falha ao cadastrar no Supabase: ' + (err as Error)?.message + '\nUsaremos cadastro local para testes.')
+      }
+    }
+    // Fallback local (dev sem Supabase): mantém comportamento antigo
     localStorage.setItem('ff:provider', JSON.stringify(payload))
-    // Registrar sugestão de categoria para aprovação do Superadmin, se houver
     if((data.pendingCategory||'').trim()){
       try{
         const raw = localStorage.getItem('admin:pendingCategories')
         const list = raw ? JSON.parse(raw) as any[] : []
-        list.push({
-          suggestion: (data.pendingCategory||'').trim(),
-          fromBrand: data.brandName,
-          contactEmail: data.email,
-          createdAt: new Date().toISOString()
-        })
+        list.push({ suggestion: (data.pendingCategory||'').trim(), fromBrand: data.brandName, contactEmail: data.email, createdAt: new Date().toISOString() })
         localStorage.setItem('admin:pendingCategories', JSON.stringify(list))
-      }catch{ /* ignore */ }
+      }catch{}
     }
     navigate('/painel/fornecedor?onboarding=catalogo', { replace:false })
   }
 
-  const exportar = ()=>{
-    exportCsv('fornecedores.csv', [{
-      marca: data.brandName,
-      documento: data.taxId,
-      contato: data.contactName,
-      email: data.email,
-      telefone: data.phone,
-      categorias: data.categories.join('|'),
-      mini_descricao: data.shortDescription,
-      cep_base: data.baseCep,
-      raio_km: data.serviceRadiusKm,
-      social: data.socialUrl,
-      chave_pix: data.pixKey,
-      termos: data.termsAccepted ? 'sim' : 'nao',
-      plano: data.plan,
-    }])
-  }
+  // removido: exportação para planilhas
 
   return (
     <section className="container" style={{maxWidth:860, padding:'1.5rem 1rem'}}>
@@ -192,30 +192,42 @@ export default function SignupProvider(){
               <label>Nome da Empresa/Marca</label>
               <input value={data.brandName} onChange={e=> onChange('brandName', e.target.value)} />
             </div>
-            <div>
-              <label>CNPJ ou CPF</label>
-              <input value={data.taxId} onChange={e=> onChange('taxId', e.target.value)} placeholder="Somente números" />
-            </div>
+          <div>
+            <label>CNPJ ou CPF</label>
+            <input value={data.taxId} onChange={e=> onChange('taxId', e.target.value)} onBlur={()=> setTouched(t=>({...t, taxId:true}))} aria-invalid={touched.taxId && !isValidCPFOrCNPJ(data.taxId)} placeholder="Somente números" inputMode="numeric" />
+            {touched.taxId && !isValidCPFOrCNPJ(data.taxId) && (
+              <small role="alert" aria-live="polite" style={{color:'#c2185b'}}>CPF/CNPJ inválido. Digite somente números e verifique os dígitos.</small>
+            )}
+          </div>
             <div>
               <label>Nome do Contato Principal</label>
               <input value={data.contactName} onChange={e=> onChange('contactName', e.target.value)} />
             </div>
             <div>
               <label>E-mail</label>
-              <input type="email" value={data.email} onChange={e=> onChange('email', e.target.value)} />
+              <input type="email" value={data.email} onChange={e=> onChange('email', e.target.value)} onBlur={()=> setTouched(t=>({...t, email:true}))} aria-invalid={touched.email && !/.+@.+\..+/.test(data.email)} />
+              {touched.email && !/.+@.+\..+/.test(data.email) && (
+                <small role="alert" aria-live="polite" style={{color:'#c2185b'}}>E-mail inválido. Use o formato nome@dominio.com.</small>
+              )}
             </div>
-            <div>
-              <label>Telefone (WhatsApp)</label>
-              <input value={data.phone} onChange={e=> onChange('phone', e.target.value)} placeholder="(11) 98888-7777" />
-            </div>
+          <div>
+            <label>Telefone (WhatsApp)</label>
+            <input value={data.phone} onChange={e=> onChange('phone', e.target.value)} onBlur={()=> setTouched(t=>({...t, phone:true}))} aria-invalid={touched.phone && !isValidPhone(data.phone)} placeholder="(11) 98888-7777" inputMode="tel" />
+            {touched.phone && !isValidPhone(data.phone) && (
+              <small role="alert" aria-live="polite" style={{color:'#c2185b'}}>Telefone inválido. Use DDD com WhatsApp: (11) 98888-7777.</small>
+            )}
+          </div>
             <div>
               <label>Senha</label>
-              <input type="password" value={data.password} onChange={e=> onChange('password', e.target.value)} minLength={8} />
-              <small style={{color:'var(--color-muted)'}}>Mínimo de 8 caracteres.</small>
+              <input type="password" value={data.password} onChange={e=> onChange('password', e.target.value)} onBlur={()=> setTouched(t=>({...t, password:true}))} aria-invalid={touched.password && data.password.length<8} minLength={8} />
+              {touched.password && data.password.length<8 ? (
+                <small role="alert" aria-live="polite" style={{color:'#c2185b'}}>Senha muito curta. Mínimo de 8 caracteres.</small>
+              ) : (
+                <small style={{color:'var(--color-muted)'}}>Mínimo de 8 caracteres.</small>
+              )}
             </div>
           </div>
-          <div style={{display:'flex', justifyContent:'space-between', marginTop:'1rem'}}>
-            <button className="btn" type="button" onClick={exportar}>Exportar para Planilhas</button>
+          <div style={{display:'flex', justifyContent:'flex-end', marginTop:'1rem'}}>
             <button className="btn btn-primary" type="button" onClick={next} disabled={!step1Ok}>Continuar</button>
           </div>
         </div>
@@ -226,11 +238,11 @@ export default function SignupProvider(){
           <h2 style={{marginTop:0}}>Definição do Serviço e Localização</h2>
           <div>
             <label>Categorias de Serviço</label>
-            <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
-              {[...CATEGORIES, 'Outros'].map(c => (
-                <button key={c} type="button" className={`btn ${data.categories.includes(c) ? 'btn-primary' : ''}`} onClick={()=> onToggleCategory(c)} style={{textTransform:'none'}}>{c}</button>
-              ))}
-            </div>
+            <select value={data.categories[0]||''} onChange={e=> onSelectCategory(e.target.value)}>
+              <option value="">Selecione…</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="Outros">Outros…</option>
+            </select>
             {data.categories.includes('Outros') && (
               <div style={{marginTop:'.6rem'}}>
                 <label>Descreva sua categoria</label>
@@ -280,18 +292,20 @@ export default function SignupProvider(){
           </div>
           <div style={{marginTop:'.8rem'}}>
             <label>Plano</label>
-            <input value="Plano Básico (Gratuito)" readOnly />
+            <select value={data.plan} onChange={e=> setData(prev=> ({...prev, plan: e.target.value as ProviderPlan}))}>
+              {(['GRATIS','START','PROFISSIONAL'] as ProviderPlan[]).map(p => (
+                <option key={p} value={p}>{getPlanLabel(p)} — {PLAN_CONFIG[p].monthlyCoins} FestCoins/mês</option>
+              ))}
+            </select>
+            <small style={{color:'var(--text-muted)'}}>Comissão: {Math.round(PLAN_CONFIG[data.plan].commissionRate*100)}%.</small>
           </div>
           <div style={{marginTop:'.8rem', display:'flex', gap:'.6rem', alignItems:'center'}}>
             <input id="termos" type="checkbox" checked={data.termsAccepted} onChange={e=> onChange('termsAccepted', e.target.checked)} />
-            <label htmlFor="termos">Li e concordo com os Termos de Parceria e com a Comissão de 15% da FestaFácil.</label>
+            <label htmlFor="termos">Li e concordo com os Termos de Parceria e com a Comissão de {Math.round(PLAN_CONFIG[data.plan].commissionRate*100)}% da FestaFácil.</label>
           </div>
-          <div style={{display:'flex', justifyContent:'space-between', marginTop:'1rem'}}>
-            <button className="btn" type="button" onClick={exportar}>Exportar para Planilhas</button>
-            <div style={{display:'flex', gap:'.6rem'}}>
-              <button className="btn" type="button" onClick={back}>Voltar</button>
-              <button className="btn btn-primary" type="button" disabled={!step3Ok} onClick={finish}>Concluir cadastro de fornecedor</button>
-            </div>
+          <div style={{display:'flex', justifyContent:'flex-end', gap:'.6rem', marginTop:'1rem'}}>
+            <button className="btn" type="button" onClick={back}>Voltar</button>
+            <button className="btn btn-primary" type="button" disabled={!step3Ok} onClick={finish}>Concluir cadastro de fornecedor</button>
           </div>
         </div>
       )}

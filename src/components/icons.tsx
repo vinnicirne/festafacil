@@ -27,3 +27,22 @@ export function UserIcon(props: IconProps){
     </svg>
   )
 }
+
+export function CrownIcon(props: IconProps){
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M3 8l4 3 3-5 3 5 4-3 4 6v3H3v-3l0-6z" fill="currentColor" />
+      <rect x="3" y="17" width="18" height="2" rx="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function CoinIcon(props: IconProps){
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <circle cx="9" cy="12" r="5" />
+      <circle cx="15" cy="12" r="5" strokeOpacity=".45" />
+      <path d="M9 9c1.8 0 3 .8 3 2s-1.2 2-3 2-3 .8-3 2" strokeOpacity=".6" />
+    </svg>
+  )
+}

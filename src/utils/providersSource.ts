@@ -2,6 +2,7 @@ import type { Service } from '@/components/ServiceCard'
 import { providers as localProviders } from '@/data/providers'
 import { PROVIDERS_CACHE_TTL_MS, CEP_PREFIX_MIN } from '@/config'
 import { getSupabase } from '@/utils/supabase'
+import { getAdminState } from '@/utils/adminStore'
 
 let cache: Service[] | null = null
 let cacheSource: 'local' | 'supabase' | null = null
@@ -40,6 +41,22 @@ const mapRowToService = (row: any): Service => ({
   includesMonitor: Boolean(row.includesMonitor),
   cepAreas: Array.isArray(row.cepAreas) ? row.cepAreas.map(String) : [],
 })
+
+function applyOverrides(list: Service[]): Service[] {
+  try{
+    const st = getAdminState()
+    const map = new Map(st.providerOverrides.map(o=> [String(o.providerId), o]))
+    return list.map(p => {
+      const o = map.get(String(p.id))
+      if(!o) return p
+      const next = { ...p }
+      if(typeof o.priceFrom === 'number' && !Number.isNaN(o.priceFrom)) next.priceFrom = o.priceFrom
+      if(typeof o.promoPercent === 'number' && !Number.isNaN(o.promoPercent)) (next as any).promoPercent = o.promoPercent
+      if(o.promoLabel) (next as any).promoLabel = o.promoLabel
+      return next
+    })
+  }catch{ return list }
+}
 
 const matchCep = (qCep: string, cepAreas: string[]) => {
   const clean = qCep.replace(/\D/g,'')
@@ -125,7 +142,7 @@ export async function queryProviders(opts: ProvidersQuery): Promise<{ items: Ser
         const to = from + size - 1
         const { data, error, count } = await query.range(from, to)
         if(!error && data){
-          let out = (data as any[]).map(mapRowToService)
+          let out = applyOverrides((data as any[]).map(mapRowToService))
           if(opts.sort==='relevancia'){
             out = [...out].sort((a,b)=>{
               const sa = scoreRelevance(a, q)
@@ -140,7 +157,7 @@ export async function queryProviders(opts: ProvidersQuery): Promise<{ items: Ser
         const size = Math.max(1, opts.pageSize)
         const { data, error } = await query.range(0, size * 3 - 1)
         if(!error && data){
-          let out = (data as any[]).map(mapRowToService)
+          let out = applyOverrides((data as any[]).map(mapRowToService))
           out = out.filter(p => matchCep(opts.qCep, p.cepAreas))
           if(opts.sort==='relevancia'){
             out = [...out].sort((a,b)=>{
@@ -157,12 +174,13 @@ export async function queryProviders(opts: ProvidersQuery): Promise<{ items: Ser
     }catch(e){ console.warn('[supabase] queryProviders failed:', (e as Error).message) }
   }
   // Fallback local
-  const base = localProviders.filter(p =>
+  let base = localProviders.filter(p =>
     p.priceFrom >= opts.price[0] && p.priceFrom <= opts.price[1] &&
     p.rating >= opts.minRating &&
     (!opts.hasCNPJ || p.hasCNPJ) && (!opts.includesMonitor || p.includesMonitor) &&
     (!q || p.category.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
   )
+  base = applyOverrides(base)
   let out = opts.onlyCepMatch && opts.qCep ? base.filter(p => matchCep(opts.qCep, p.cepAreas)) : base
   if(opts.sort==='melhor') out = [...out].sort((a,b)=> (b.rating - a.rating) || (b.ratingCount - a.ratingCount))
   else if(opts.sort==='preco-asc') out = [...out].sort((a,b)=> (a.priceFrom - b.priceFrom))
@@ -196,7 +214,7 @@ export async function getProviders(): Promise<Service[]>{
         }
       }catch(e){ /* noop, mantém cache atual */ }
     }
-    return cache
+    return applyOverrides(cache)
   }
 
   const fromSession = loadFromSession()
@@ -213,7 +231,7 @@ export async function getProviders(): Promise<Service[]>{
         }
       }catch(e){ /* mantém session cache */ }
     }
-    return cache
+    return applyOverrides(cache)
   }
 
   if(sb){
@@ -223,7 +241,7 @@ export async function getProviders(): Promise<Service[]>{
         cache = (data as any[]).map(mapRowToService)
         cacheSource = 'supabase'
         saveToSession(cache, 'supabase')
-        return cache
+        return applyOverrides(cache)
       }
       if(error) console.warn('[supabase] providers.select error:', error.message)
     }catch(e){
@@ -233,7 +251,7 @@ export async function getProviders(): Promise<Service[]>{
   cache = localProviders
   cacheSource = 'local'
   saveToSession(cache, 'local')
-  return cache
+  return applyOverrides(cache)
 }
 
 export async function getProviderById(id: string): Promise<Service | null>{

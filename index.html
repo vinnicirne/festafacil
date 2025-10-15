@@ -4,7 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <meta name="theme-color" content="#FFC107" />
-    <title>FestaFácil - Sua Festa Começa Aqui</title>
+    <title>Festa Fácil — Sua festa começa aqui</title>
+    <meta name="description" content="Encontre fornecedores confiáveis para sua festa: buffet, decoração, DJs e mais perto de você." />
+    <link rel="canonical" href="https://festa-facil-13102025.vercel.app/" />
+    <meta name="robots" content="index,follow" />
+    <meta name="application-name" content="Festa Fácil" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Festa Fácil" />
+    <meta name="msapplication-TileColor" content="#FFC107" />
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="Festa Fácil — Sua festa começa aqui" />
+    <meta property="og:description" content="Encontre fornecedores confiáveis para sua festa: buffet, decoração, DJs e mais perto de você." />
+    <meta property="og:url" content="https://festa-facil-13102025.vercel.app/" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Festa Fácil — Sua festa começa aqui" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Festa Fácil — Sua festa começa aqui" />
+    <meta name="twitter:description" content="Encontre fornecedores confiáveis para sua festa: buffet, decoração, DJs e mais perto de você." />
+    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image:alt" content="Festa Fácil — Sua festa começa aqui" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="mask-icon" href="/favicon.svg" color="#FFC107" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,5 +47,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const swUrl = '/sw.js';
+          navigator.serviceWorker
+            .register(swUrl)
+            .then((reg) => {
+              console.log('Service Worker registrado:', reg.scope);
+            })
+            .catch((err) => {
+              console.error('Falha ao registrar Service Worker:', err);
+            });
+        });
+      }
+    </script>
   </body>
   </html>

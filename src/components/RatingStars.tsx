@@ -7,7 +7,7 @@ export default function RatingStars({ value, count }: Props){
   const color = RATING_STAR_COLOR
   return (
     <span aria-label={`Nota ${value.toFixed(1)} de ${RATING_MAX_STARS}`} title={`${value.toFixed(1)} / ${RATING_MAX_STARS}`}>
-      <span style={{color, letterSpacing:1}}>{stars.join(' ')}</span>
+      <span style={{color, letterSpacing:.5}}>{stars.join(' ')}</span>
       {typeof count === 'number' && <span style={{marginLeft:6, color:'var(--color-muted)'}}>({count})</span>}
     </span>
   )

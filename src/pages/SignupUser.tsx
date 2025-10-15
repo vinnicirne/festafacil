@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchViaCEP } from '@/utils/viacep'
-import { exportCsv } from '@/utils/export'
+// Removed export to CSV from signup to simplify UI
 
 type ClientForm = {
   fullName: string
@@ -89,18 +89,7 @@ export default function SignupUser(){
     navigate('/checkout', { replace: false })
   }
 
-  const exportar = ()=>{
-    exportCsv('clientes.csv', [{
-      nome: form.fullName,
-      email: form.email,
-      telefone: form.phone,
-      cep: form.cep,
-      endereco: form.address,
-      bairro: form.district,
-      cidade: form.city,
-      uf: form.uf
-    }])
-  }
+  // Export removed
 
   return (
     <section className="container" style={{maxWidth:720, padding:'1.5rem 1rem'}}>
@@ -160,8 +149,7 @@ export default function SignupUser(){
           </div>
         </div>
 
-        <div style={{display:'flex', gap:'.6rem', marginTop:'1rem', alignItems:'center', justifyContent:'space-between'}}>
-          <button type="button" className="btn" onClick={exportar}>Exportar para Planilhas</button>
+        <div style={{display:'flex', gap:'.6rem', marginTop:'1rem', alignItems:'center', justifyContent:'flex-end'}}>
           <button className="btn btn-primary" disabled={!allOk} type="submit">Continuar</button>
         </div>
       </form>

@@ -52,6 +52,7 @@ end $$;
 
 const cepSqlPath = path.join(repoRoot, 'supabase', 'cep_prefixes_setup.sql')
 const seedSqlPath = path.join(repoRoot, 'supabase', 'seed_providers.sql')
+const providerAccountsSqlPath = path.join(repoRoot, 'supabase', 'provider_accounts_setup.sql')
 
 function readFile(p){
   if(!fs.existsSync(p)){
@@ -63,6 +64,7 @@ function readFile(p){
 
 const cepSQL = readFile(cepSqlPath)
 const seedSQL = readFile(seedSqlPath)
+const providerAccountsSQL = readFile(providerAccountsSqlPath)
 
 async function run(){
   console.log('[setup] Conectando ao banco...')
@@ -83,6 +85,9 @@ async function run(){
 
     console.log('[setup] Inserindo/atualizando seed de fornecedores...')
     await client.query(seedSQL)
+
+    console.log('[setup] Criando/atualizando tabela provider_accounts + RLS...')
+    await client.query(providerAccountsSQL)
   } finally {
     await client.end()
   }

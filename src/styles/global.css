@@ -37,6 +37,23 @@ main { min-height: calc(100vh - 132px) }
   .navbar-actions { width:100%; gap:.5rem; flex-direction: column; align-items: stretch }
   .navbar-actions input { width:100%; flex:1; min-width:0 }
   .navbar-actions .btn { width:100%; padding:.55rem .8rem; font-size:.95rem }
+  /* Centraliza cabeçalho do fornecedor e título/chip em telas pequenas */
+  .provider-header{ justify-content:center !important; text-align:center }
+  .provider-title{ display:flex !important; justify-content:center }
+  /* Botão de ação do fornecedor ocupa toda a largura abaixo do título */
+  .provider-header .btn{ width:100%; flex: 1 0 100%; margin-top: .6rem; }
+  /* Mais respiro entre título/chips em mobile */
+  .provider-header + div{ margin-top: .8rem }
+}
+
+/* Espaçamento padrão entre header e bloco de chips/meta */
+.provider-header + div{ margin-top: clamp(.6rem, 1vw, .8rem) }
+
+/* Ajustes para tablets: limita largura do botão e centraliza */
+@media (min-width: 641px) and (max-width: 1024px){
+  .provider-header{ flex-wrap: wrap }
+  .provider-title{ width:100%; justify-content:center; text-align:center }
+  .provider-header .btn{ width:100%; max-width: clamp(280px, 50vw, 560px); margin: .6rem auto 0; flex: 0 0 auto }
 }
 
 
@@ -46,3 +63,16 @@ main { min-height: calc(100vh - 132px) }
 
 /* Destaque de termo nos resultados */
 .hl { background: #fff3a3; padding: 0 .08em; border-radius: 3px }
+
+/* Stats tiles (Plan card) */
+.stat-grid{ display:grid; gap:.8rem; grid-template-columns:repeat(3, minmax(200px, 1fr)); }
+@media (max-width: 900px){ .stat-grid{ grid-template-columns: repeat(2, minmax(180px, 1fr)); } }
+@media (max-width: 560px){ .stat-grid{ grid-template-columns: 1fr; } }
+.stat{ background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:12px; padding:.9rem; display:grid; gap:.25rem; box-shadow: var(--shadow-sm); }
+.stat__label{ color:var(--color-muted); font-size:.8rem; }
+.stat__value{ font-size:1.35rem; font-weight:700; display:inline-flex; align-items:center; gap:.4rem; }
+.stat__caption{ color:var(--color-muted); font-size:.8rem; }
+
+/* Accent for FestCoins tile */
+.stat--coins{ background: var(--color-promo-bg); border-color: var(--color-promo-border); }
+.stat--coins .stat__value svg{ color: var(--color-primary); }

@@ -5,6 +5,10 @@
   --color-bg: #F5FBFD; /* Fundo suave */
   --color-text: #222;
   --color-muted: #6B7280;
+  /* Promo badge palette (harmoniza com o amarelo primário) */
+  --color-promo-bg: #fff7d6;
+  --color-promo-border: #ffe8a3;
+  --color-promo-text: #4e3d00;
   --radius: 12px;
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
@@ -23,6 +27,13 @@
 .btn-secondary:hover { filter: brightness(1.05); }
 
 .chip { background:#fff; border:1px solid #e6edf1; padding:.4rem .7rem; border-radius:999px; font-size:.85rem }
+.chip--promo { background: var(--color-promo-bg); border-color: var(--color-promo-border); color: var(--color-promo-text); font-size:.82rem; font-weight:500 }
+/* Plano e Saldo – variantes com cores distintas */
+.chip--plan-gratis{ background:#f3f4f6; border-color:#e5e7eb; color:#374151 }
+.chip--plan-start{ background:#e6f7fb; border-color:#c5eef8; color:#0b5e6a }
+.chip--plan-profissional{ background:#f3e7ff; border-color:#e3d0ff; color:#4a2a7f }
+.chip--saldo{ background: var(--color-promo-bg); border-color: var(--color-promo-border); color: var(--color-promo-text) }
+.chip--saldo svg{ color: var(--color-primary) }
 .section { padding: 1.25rem; max-width: 1200px; margin: 0 auto; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 .card { background:#fff; border-radius: var(--radius); box-shadow: var(--shadow-sm); border:1px solid #eaf1f5; }

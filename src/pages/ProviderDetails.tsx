@@ -13,6 +13,9 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { fetchViaCEP } from '@/utils/viacep'
 import { CEP_FULL_LENGTH, PROVIDER_CEP_DEBOUNCE_MS } from '@/config'
 import { SUGGESTION_TRUNCATE_LIMIT } from '@/config'
+import { getStore } from '@/utils/realtime'
+import { PLAN_CONFIG, type ProviderPlan } from '@/utils/saas'
+import { CrownIcon } from '@/components/icons'
 
 export default function ProviderDetails(){
   const { id } = useParams()
@@ -43,11 +46,7 @@ export default function ProviderDetails(){
   }, [cepSuggestion])
   const canSubmit = lead.nome && isValidPhone(lead.contato) && (lead.data) && (lead.endereco) && isValidCEP(lead.cep)
 
-  // Painel do Fornecedor: Brinquedos e Estações
-  const [brinquedos, setBrinquedos] = useState<string[]>([])
-  const [novoBrinquedo, setNovoBrinquedo] = useState('')
-  const [estacoes, setEstacoes] = useState<string[]>([])
-  const [novaEstacao, setNovaEstacao] = useState('')
+  // Removido: estados de catálogo e painel do fornecedor
 
   useEffect(()=>{
     const only = dCep.replace(/\D/g,'')
@@ -71,32 +70,7 @@ export default function ProviderDetails(){
     return ()=>{ active=false }
   }, [dCep])
 
-  // Carrega e persiste catálogo do fornecedor em localStorage
-  useEffect(()=>{
-    if(!id) return
-    const b = localStorage.getItem(`provider:${id}:brinquedos`)
-    const e = localStorage.getItem(`provider:${id}:estacoes`)
-    if(b) setBrinquedos(JSON.parse(b))
-    if(e) setEstacoes(JSON.parse(e))
-  }, [id])
-
-  useEffect(()=>{ if(id) localStorage.setItem(`provider:${id}:brinquedos`, JSON.stringify(brinquedos)) }, [brinquedos, id])
-  useEffect(()=>{ if(id) localStorage.setItem(`provider:${id}:estacoes`, JSON.stringify(estacoes)) }, [estacoes, id])
-
-  const addBrinquedo = ()=>{
-    const v = novoBrinquedo.trim()
-    if(!v) return
-    if(!brinquedos.includes(v)) setBrinquedos([...brinquedos, v])
-    setNovoBrinquedo('')
-  }
-  const delBrinquedo = (v:string)=> setBrinquedos(brinquedos.filter(x=>x!==v))
-  const addEstacao = ()=>{
-    const v = novaEstacao.trim()
-    if(!v) return
-    if(!estacoes.includes(v)) setEstacoes([...estacoes, v])
-    setNovaEstacao('')
-  }
-  const delEstacao = (v:string)=> setEstacoes(estacoes.filter(x=>x!==v))
+  // Removido: efeitos e manipuladores de catálogo
 
   if(!p) return <section className="section"><div className="loader">Carregando fornecedor...</div></section>
 
@@ -119,23 +93,53 @@ export default function ProviderDetails(){
     }
     return <>{out}</>
   }
+  const plan = getStore<ProviderPlan>(`provider:${p.id}:plan`, 'GRATIS')
+  const hasPromo = typeof p.promoPercent==='number' && p.promoPercent>0
+  const finalPrice = hasPromo ? (p.priceFrom * (1 - (p.promoPercent||0)/100)) : p.priceFrom
+  const calcPromo = (x:number) => hasPromo ? (x * (1 - (p.promoPercent||0)/100)) : x
+  const showPromoBadge = (!!(p.promoLabel && p.promoLabel.trim())) || (typeof p.promoPercent==='number' && p.promoPercent>0)
 
   return (
     <section className="section" style={{display:'grid', gap:'1rem'}}>
       <div className="grid">
         <ImageCarousel images={images} />
-        <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem'}}>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+        <div className="card" style={{padding:'1rem', display:'grid', gap:'clamp(.5rem, .9vw, .8rem)'}}>
+          <div className="provider-header" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
             <div>
-              <h1 style={{margin:0}}>{highlight(p.name, qRaw)}</h1>
-              <RatingStars value={p.rating} count={p.ratingCount} />
+              <h1 className="provider-title" style={{margin:0, display:'inline-flex', alignItems:'center', gap:'.5rem'}}>
+                {highlight(p.name, qRaw)}
+                {showPromoBadge && (
+                  <span className="chip chip--promo">{p.promoLabel ? p.promoLabel : `Promo ${p.promoPercent}%`}</span>
+                )}
+              </h1>
+              <div style={{marginTop:'clamp(.25rem, .6vw, .45rem)'}}>
+                <RatingStars value={p.rating} count={p.ratingCount} />
+              </div>
             </div>
             <button className="btn btn-primary" onClick={()=>setOpen(true)}>SOLICITAR ORÇAMENTO / VER DISPONIBILIDADE</button>
           </div>
-          <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
+          <div style={{display:'flex', gap:'clamp(.5rem, 1.2vw, .8rem)', flexWrap:'wrap'}}>
+            {PLAN_CONFIG[plan].premiumBadge && (
+              <span className="chip" style={{display:'inline-flex', alignItems:'center', gap:6}}>
+                <CrownIcon /> Premium
+              </span>
+            )}
             {(exactName || exactCategory) && <span className="chip">{highlight(`Match exato${exactName?': nome':': categoria'}`, qRaw)}</span>}
             <span className="chip">{highlight(`Categoria: ${p.category}`, qRaw)}</span>
-            <span className="chip">{highlight(`a partir de ${formatCurrency(p.priceFrom)}`, qRaw)}</span>
+            {hasPromo ? (
+              <>
+                <span className="chip" style={{textDecoration:'line-through', opacity:.7}}>de {formatCurrency(p.priceFrom)}</span>
+                <span className="chip chip--promo">por {formatCurrency(finalPrice)}</span>
+              </>
+            ) : (
+              <span className="chip">{highlight(`a partir de ${formatCurrency(p.priceFrom)}`, qRaw)}</span>
+            )}
+            {typeof p.promoPercent==='number' && p.promoPercent>0 && (
+              <span className="chip chip--promo" title={`Promoção ${p.promoPercent}%`}>Promo {p.promoPercent}%</span>
+            )}
+            {p.promoLabel && (
+              <span className="chip chip--promo">{highlight(p.promoLabel, qRaw)}</span>
+            )}
             <span className="chip">{highlight(`Raio ${p.radiusKm}km`, qRaw)}</span>
             {p.hasCNPJ && <span className="chip">{highlight('Tem CNPJ', qRaw)}</span>}
             {p.includesMonitor && <span className="chip">{highlight('Inclui Monitor', qRaw)}</span>}
@@ -144,31 +148,47 @@ export default function ProviderDetails(){
         <Tabs
           tabs={[
             { key:'descricao', label:'Descrição', content: <p>Serviço profissional na categoria {highlight(p.category, qRaw)}. Equipamentos testados e higienizados. Montagem rápida e segura.</p> },
-            { key:'catalogo', label:'Catálogo', content: (
-              <div style={{display:'grid', gap:'.8rem'}}>
-                <div>
-                  <h3 style={{margin:'0 0 .4rem 0'}}>Brinquedos</h3>
-                  {brinquedos.length ? (
-                    <div style={{display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
-                      {brinquedos.map(b => <span key={b} className="chip">{highlight(b, qRaw)}</span>)}
-                    </div>
-                  ) : <small style={{color:'var(--color-muted)'}}>Nenhum brinquedo cadastrado ainda.</small>}
-                </div>
-                <div>
-                  <h3 style={{margin:'0 0 .4rem 0'}}>Estações</h3>
-                  {estacoes.length ? (
-                    <div style={{display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
-                      {estacoes.map(e => <span key={e} className="chip">{highlight(e, qRaw)}</span>)}
-                    </div>
-                  ) : <small style={{color:'var(--color-muted)'}}>Nenhuma estação cadastrada ainda.</small>}
-                </div>
-              </div>
-            ) },
-            { key:'pacotes', label:'Pacotes/Preços', content: (
-              <ul>
-                <li>Básico: {formatCurrency(p.priceFrom)} (2h)</li>
-                <li>Padrão: {formatCurrency(p.priceFrom + 200)} (4h)</li>
-                <li>Premium: {formatCurrency(p.priceFrom + 500)} (6h + extra)</li>
+            { key:'pacotes', label:(
+              <span style={{display:'inline-flex', alignItems:'center', gap:'.35rem'}}>
+                Pacotes/Preços
+                {hasPromo && (
+                  <span style={{background:'var(--color-promo-bg)', borderRadius:8, padding:'0 .35rem', fontSize:'.85em'}}>
+                    {p.promoLabel ? p.promoLabel : `Promo ${p.promoPercent}%`}
+                  </span>
+                )}
+              </span>
+            ), content: (
+              <ul style={{display:'grid', gap:'.4rem'}}>
+                <li>
+                  Básico: {hasPromo ? (
+                    <>
+                      <span style={{textDecoration:'line-through', opacity:.7}}>{formatCurrency(p.priceFrom)}</span>
+                      <strong style={{marginLeft:'.35rem', background:'var(--color-promo-bg)', borderRadius:8, padding:'0 .4rem'}}>por {formatCurrency(calcPromo(p.priceFrom))}</strong>
+                    </>
+                  ) : (
+                    formatCurrency(p.priceFrom)
+                  )} (2h)
+                </li>
+                <li>
+                  Padrão: {hasPromo ? (
+                    <>
+                      <span style={{textDecoration:'line-through', opacity:.7}}>{formatCurrency(p.priceFrom + 200)}</span>
+                      <strong style={{marginLeft:'.35rem', background:'var(--color-promo-bg)', borderRadius:8, padding:'0 .4rem'}}>por {formatCurrency(calcPromo(p.priceFrom + 200))}</strong>
+                    </>
+                  ) : (
+                    formatCurrency(p.priceFrom + 200)
+                  )} (4h)
+                </li>
+                <li>
+                  Premium: {hasPromo ? (
+                    <>
+                      <span style={{textDecoration:'line-through', opacity:.7}}>{formatCurrency(p.priceFrom + 500)}</span>
+                      <strong style={{marginLeft:'.35rem', background:'var(--color-promo-bg)', borderRadius:8, padding:'0 .4rem'}}>por {formatCurrency(calcPromo(p.priceFrom + 500))}</strong>
+                    </>
+                  ) : (
+                    formatCurrency(p.priceFrom + 500)
+                  )} (6h + extra)
+                </li>
               </ul>) },
             { key:'disponibilidade', label:'Disponibilidade', content: (
               <div style={{display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:6}}>
@@ -180,45 +200,6 @@ export default function ProviderDetails(){
                 <div className="card" style={{padding:'.8rem'}}>Equipe atenciosa e pontual. ⭐⭐⭐⭐</div>
               </div>) },
             { key:'politicas', label:'Políticas', content: <p>Cancelamento até 7 dias antes do evento com reembolso integral. Termos de serviço disponíveis mediante solicitação.</p> },
-            { key:'painel', label:'Painel do Fornecedor', content: (
-              <div className="card" style={{padding:'.8rem', display:'grid', gap:'.8rem'}}>
-                <div>
-                  <h3 style={{margin:'0 0 .4rem 0'}}>Adicionar Brinquedo</h3>
-                  <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
-                    <input value={novoBrinquedo} onChange={e=>setNovoBrinquedo(e.target.value)} placeholder="Ex.: Pula-pula grande, Piscina de bolinhas" style={{flex:1, minWidth:220, padding:'.6rem', border:'1px solid #e6edf1', borderRadius:12}} />
-                    <button className="btn" type="button" onClick={addBrinquedo}>Adicionar</button>
-                  </div>
-                  {brinquedos.length>0 && (
-                    <div style={{marginTop:'.6rem', display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
-                      {brinquedos.map(b => (
-                        <span key={b} className="chip" style={{display:'inline-flex', alignItems:'center', gap:6}}>
-                          {b}
-                          <button type="button" onClick={()=>delBrinquedo(b)} aria-label={`Remover ${b}`} style={{border:'none', background:'transparent', cursor:'pointer'}}>×</button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 style={{margin:'0 0 .4rem 0'}}>Adicionar Estação</h3>
-                  <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
-                    <input value={novaEstacao} onChange={e=>setNovaEstacao(e.target.value)} placeholder="Ex.: Estação de Pipoca, Algodão Doce" style={{flex:1, minWidth:220, padding:'.6rem', border:'1px solid #e6edf1', borderRadius:12}} />
-                    <button className="btn" type="button" onClick={addEstacao}>Adicionar</button>
-                  </div>
-                  {estacoes.length>0 && (
-                    <div style={{marginTop:'.6rem', display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
-                      {estacoes.map(e => (
-                        <span key={e} className="chip" style={{display:'inline-flex', alignItems:'center', gap:6}}>
-                          {e}
-                          <button type="button" onClick={()=>delEstacao(e)} aria-label={`Remover ${e}`} style={{border:'none', background:'transparent', cursor:'pointer'}}>×</button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <small style={{color:'var(--color-muted)'}}>Os itens ficam salvos apenas neste navegador.</small>
-              </div>
-            ) },
           ]}
         />
       </div>

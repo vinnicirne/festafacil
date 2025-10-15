@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import Modal from '@/components/Modal'
+import { signIn } from '@/utils/auth'
 import { fetchViaCEP } from '@/utils/viacep'
 
 type Role = 'cliente' | 'fornecedor'
@@ -21,11 +21,9 @@ function maskCEP(v: string){
 export default function Auth(){
   const navigate = useNavigate()
   const [sp] = useSearchParams()
-  const [open, setOpen] = useState(true)
   const [role, setRole] = useState<Role>((sp.get('role') as Role) || 'cliente')
   const [mode, setMode] = useState<Mode>((sp.get('mode') as Mode) || 'login')
 
-  useEffect(()=>{ if(!open) navigate(-1) }, [open])
 
   // Login state (ilustrativo)
   const [loginEmail, setLoginEmail] = useState('')
@@ -79,20 +77,19 @@ export default function Auth(){
     e.preventDefault()
     if(!cAllOk) return
     localStorage.setItem('ff:client', JSON.stringify({ nome:cNome, email:cEmail, phone:cPhone, cep:cCep, addr:cAddr, city:cCity, uf:cUf }))
-    setOpen(false)
     navigate('/cadastro-cliente')
   }
   const submitFornecedorPrimeiroPasso = (e:React.FormEvent)=>{
     e.preventDefault()
     if(!fOk) return
     localStorage.setItem('ff:provider:seed', JSON.stringify({ marca:fMarca, doc:fDoc, contato:fContato, email:fEmail, phone:fPhone }))
-    setOpen(false)
     navigate('/cadastro-fornecedor')
   }
 
   return (
-    <Modal open={open} onClose={()=> setOpen(false)} title="" >
-      <div style={{display:'grid', gap:'.8rem'}}>
+    <section className="section" style={{display:'grid', justifyContent:'center'}}>
+      <div className="container" style={{maxWidth:720, padding:'1rem'}}>
+        <div style={{display:'grid', gap:'.8rem'}}>
         <h2 style={{textAlign:'center', margin:'0 0 .2rem'}}>Você é fornecedor ou contratante?</h2>
         <div style={{display:'flex', gap:'.6rem', justifyContent:'center'}}>
           <button className={`chip ${role==='fornecedor'? 'chip--active':''}`} onClick={()=> setRole('fornecedor')} style={{borderRadius:24, padding:'.6rem 1rem', background: role==='fornecedor'? 'crimson':'#eee', color: role==='fornecedor'? '#fff':'#111'}}>fornecedor</button>
@@ -100,7 +97,20 @@ export default function Auth(){
         </div>
 
         {mode==='login' && (
-          <form className="card auth-form" onSubmit={(e)=>{ e.preventDefault(); alert('Login demonstrativo'); }}>
+          <form className="card auth-form" onSubmit={async (e)=>{
+            e.preventDefault()
+            try{
+              const data = await signIn(loginEmail, loginPwd)
+              if(role==='fornecedor'){
+                // Após login, redireciona para painel; guard tratará status aprovado
+                navigate('/painel/fornecedor')
+              } else {
+                navigate('/painel/usuario')
+              }
+            }catch(err){
+              alert('Falha no login: ' + (err as Error)?.message)
+            }
+          }}>
             <label style={{marginBottom:'.3rem'}}>Qual foi seu e-mail de cadastro?</label>
             <input type="email" value={loginEmail} onChange={e=> setLoginEmail(e.target.value)} placeholder="e-mail" required />
             <div style={{height:'.6rem'}} />
@@ -138,7 +148,7 @@ export default function Auth(){
               O cadastro de fornecedor é feito em um formulário dedicado com 3 etapas.
               Clique abaixo para ir direto para o formulário completo.
             </p>
-            <button className="btn btn-primary" onClick={()=>{ setOpen(false); navigate('/cadastro-fornecedor') }}>
+            <button className="btn btn-primary" onClick={()=>{ navigate('/cadastro-fornecedor') }}>
               ir para cadastro de fornecedor
             </button>
           </div>
@@ -156,7 +166,8 @@ export default function Auth(){
             <button className="btn" onClick={()=> setMode('login')}>já tenho cadastro</button>
           )}
         </div>
+        </div>
       </div>
-    </Modal>
+    </section>
   )
 }

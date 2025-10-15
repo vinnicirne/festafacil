@@ -55,23 +55,23 @@ export default function Modal({ open, onClose, side, title, size='md', closeOnOv
 
   const widthMap = { sm: '420px', md: '560px', lg: '680px', xl: '820px' } as const
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby={title? titleId: undefined} className="fade-in" style={{position:'fixed', inset:0, background:'rgba(17,24,39,.42)', backdropFilter:'blur(2px)', display:'grid', placeItems: side? 'stretch':'center', zIndex:1000}} onClick={()=>{ if(closeOnOverlay) onClose() }}>
-      <div className="card" style={{
-        width: side? 'min(420px, 92vw)':`min(${widthMap[size]}, 92vw)`,
+    <div role="dialog" aria-modal="true" aria-labelledby={title? titleId: undefined} className="fade-in" style={{position:'fixed', inset:0, background:'rgba(17,24,39,.42)', backdropFilter:'blur(6px)', display:'grid', placeItems: side? 'stretch':'center', zIndex:1000}} onClick={()=>{ if(closeOnOverlay) onClose() }}>
+      <div role="document" className="card" style={{
+        width: side? 'min(440px, 92vw)':`min(${widthMap[size]}, 92vw)`,
         height: side? '100%':'auto',
         maxHeight: side? '100%':'min(80vh, 100%)',
         marginLeft: side? 'auto':'unset',
-        borderRadius: side? '12px 0 0 12px':'12px',
+        borderRadius: side? '16px 0 0 16px':'16px',
         overflow:'auto',
         background:'#fff',
         color:'#111',
         boxShadow:'var(--shadow-md)'
       }} onClick={e=>e.stopPropagation()} ref={containerRef} tabIndex={-1}>
-        <div style={{position:'sticky', top:0, background:'#fff', zIndex:1, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'.8rem 1rem', borderBottom:'1px solid #eef2f5'}}>
-          <strong id={titleId}>{title}</strong>
-          <button className="chip" onClick={onClose} aria-label="Fechar" autoFocus>Fechar</button>
+        <div style={{position:'sticky', top:0, background:'#fff', zIndex:1, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'clamp(1rem, 1.6vw, 1.2rem) clamp(1.1rem, 2vw, 1.3rem)', borderBottom:'1px solid #eef2f5'}}>
+          <strong id={titleId} style={{fontSize:'1.05rem'}}>{title}</strong>
+          <button className="btn" onClick={onClose} aria-label="Fechar" autoFocus style={{minHeight:'32px', padding:'.4rem .65rem'}}>✕</button>
         </div>
-        <div style={{padding:'1rem'}}>
+        <div style={{padding:'clamp(1.2rem, 2.4vw, 1.6rem)', display:'grid', gap:'clamp(.7rem, 1.6vw, .95rem)'}}>
           {children}
         </div>
       </div>

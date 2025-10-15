@@ -6,8 +6,12 @@ import type { Service } from '@/components/ServiceCard'
 import { getProviders } from '@/utils/providersSource'
 import { SUGGESTIONS_LIMIT, NAVBAR_SEARCH_DEBOUNCE_MS } from '@/config'
 import { cepFromCoords } from '@/utils/reverseGeocode'
-import { TargetIcon, UserIcon } from '@/components/icons'
+import { TargetIcon, UserIcon, CrownIcon, CoinIcon } from '@/components/icons'
 import MobileMenu from './MobileMenu'
+import { getStore } from '@/utils/realtime'
+import { getAdminState } from '@/utils/adminStore'
+import { getPlanLabel, type ProviderPlan, FESTCOIN_NAME } from '@/utils/saas'
+import { getSupabase } from '@/utils/supabase'
 
 export default function Navbar(){
   const { pathname, search } = useLocation()
@@ -99,6 +103,27 @@ export default function Navbar(){
     }, ()=>{ setGeoStatus('error') }, { enableHighAccuracy:true, timeout:8000, maximumAge:30000 })
   }
   const isHome = pathname === '/'
+  const spGlobal = new URLSearchParams(search)
+  const providerIdParam = spGlobal.get('id') || ''
+  const isProviderDashboard = pathname.startsWith('/painel/fornecedor')
+  const currentProviderId = isProviderDashboard ? (providerIdParam || (allProviders[0]?.id ? String(allProviders[0].id) : '')) : ''
+  const currentPlan: ProviderPlan = (isProviderDashboard && currentProviderId)
+    ? getStore<ProviderPlan>(`provider:${currentProviderId}:plan`, 'GRATIS')
+    : 'GRATIS'
+  const planLabel = isProviderDashboard && currentProviderId ? getPlanLabel(currentPlan) : null
+  const coinsBalance = isProviderDashboard && currentProviderId ? (getAdminState().coins[currentProviderId] || 0) : null
+  const [providerLogged, setProviderLogged] = useState<boolean>(false)
+  useEffect(()=>{
+    const sb = getSupabase()
+    if(!isProviderDashboard){ setProviderLogged(false); return }
+    if(!sb){
+      try{ setProviderLogged(!!localStorage.getItem('ff:provider')) }catch{ setProviderLogged(false) }
+      return
+    }
+    sb.auth.getSession().then(({ data })=>{
+      setProviderLogged(!!data?.session)
+    }).catch(()=> setProviderLogged(false))
+  }, [isProviderDashboard])
   return (
     <header className="nav card navbar" style={{position:'sticky', top:0, zIndex:50, backdropFilter:'saturate(1.2) blur(6px)'}}>
       <div className="container navbar-inner">
@@ -117,7 +142,7 @@ export default function Navbar(){
           </Link>
         </div>
         <nav aria-label="principal" style={{display:'none'}}/>
-        <div className="navbar-actions" style={{display:'flex', alignItems:'center', gap:'.5rem'}}>
+        <div className="navbar-actions" style={{display:'flex', alignItems:'center', gap:'.5rem', flexWrap:'wrap'}}>
           {isHome ? (
             <>
               <Link to="/auth?role=fornecedor" style={{fontSize:'.98rem', fontWeight:600, color:'#111', textDecoration:'none'}}>Fornecedores</Link>
@@ -167,6 +192,30 @@ export default function Navbar(){
               {suggestions.map(v => <option key={v} value={v} />)}
             </datalist>
           </div>
+          )}
+          {isProviderDashboard && providerLogged && (
+            <div style={{display:'flex', alignItems:'center', gap:'.4rem', flexWrap:'wrap'}}>
+              <button
+                className={`chip chip--plan-${String(currentPlan).toLowerCase()}`}
+                style={{display:'inline-flex', alignItems:'center', gap:6}}
+                onClick={()=> navigate(`/painel/fornecedor${currentProviderId ? `?id=${encodeURIComponent(currentProviderId)}&view=planos` : `?view=planos`}`)}
+                aria-label="Ver planos"
+                title="Ver planos"
+              >
+                <CrownIcon />
+                <span style={{fontSize:'.9rem'}}>{planLabel ? `Plano: ${planLabel}` : 'Plano'}</span>
+              </button>
+              <button
+                className="chip chip--saldo"
+                style={{display:'inline-flex', alignItems:'center', gap:6}}
+                onClick={()=> navigate(`/painel/fornecedor${currentProviderId ? `?id=${encodeURIComponent(currentProviderId)}&view=moedas` : `?view=moedas`}`)}
+                aria-label={`Saldo ${FESTCOIN_NAME}`}
+                title={`Saldo ${FESTCOIN_NAME}`}
+              >
+                <CoinIcon />
+                <span style={{fontSize:'.9rem'}}>Saldo: {typeof coinsBalance==='number' ? coinsBalance : '-' } {FESTCOIN_NAME}</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

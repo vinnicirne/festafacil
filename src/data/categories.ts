@@ -10,5 +10,4 @@ export const CATEGORIES = [
   'Fotografia',
   'Iluminação',
   'Lembrancinhas',
-  'Pipoca e Algodão Doce',
 ]

@@ -80,7 +80,7 @@ export default function AdminDashboard(){
                 </div>
                 <div style={{display:'flex', gap:'.4rem'}}>
                   <Link to={`/fornecedor/${p.id}`} className="btn btn-secondary">Ver</Link>
-                  <Link to={`/painel/fornecedor`} className="btn">Gerenciar catálogo</Link>
+                  <Link to={`/painel/fornecedor?id=${p.id}`} className="btn">Abrir Painel do Fornecedor</Link>
                 </div>
               </div>
             ))}

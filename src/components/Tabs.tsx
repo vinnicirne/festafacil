@@ -1,6 +1,6 @@
 import { useState, PropsWithChildren, ReactNode } from 'react'
 
-type Tab = { key:string, label:string, content: ReactNode }
+type Tab = { key:string, label:ReactNode, content: ReactNode }
 export default function Tabs({ tabs, initial } : PropsWithChildren<{ tabs: Tab[], initial?: string }>){
   const [active, setActive] = useState(initial ?? tabs[0]?.key)
   const current = tabs.find(t=>t.key===active) ?? tabs[0]

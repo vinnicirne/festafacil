@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import RequireProvider from './components/RequireProvider'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 
@@ -8,10 +9,11 @@ const Home = lazy(() => import('./pages/Home'))
 const Search = lazy(() => import('./pages/Search'))
 const ProviderDetails = lazy(() => import('./pages/ProviderDetails'))
 const Checkout = lazy(() => import('./pages/Checkout'))
+const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'))
 const ProviderDashboard = lazy(() => import('./pages/ProviderDashboard'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const About = lazy(() => import('./pages/About'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'))
 const SignupUser = lazy(() => import('./pages/SignupUser'))
 const SignupProvider = lazy(() => import('./pages/SignupProvider'))
 const Auth = lazy(() => import('./pages/Auth'))
@@ -33,12 +35,13 @@ export default function App() {
             <Route path="/busca" element={<Search />} />
             <Route path="/fornecedor/:id" element={<ProviderDetails />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/cadastro-cliente" element={<SignupUser />} />
             <Route path="/cadastro-fornecedor" element={<SignupProvider />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/painel/fornecedor" element={<ProviderDashboard />} />
+            <Route path="/painel/fornecedor" element={<RequireProvider><ProviderDashboard /></RequireProvider>} />
             <Route path="/painel/usuario" element={<UserDashboard />} />
-            <Route path="/painel/admin" element={<AdminDashboard />} />
+            <Route path="/painel/admin" element={<SuperAdminDashboard />} />
           </Routes>
         </Suspense>
       </main>

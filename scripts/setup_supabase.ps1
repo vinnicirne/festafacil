@@ -48,8 +48,10 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $root '..')
 $cepSql = Join-Path $repoRoot 'supabase/cep_prefixes_setup.sql'
 $seedSql = Join-Path $repoRoot 'supabase/seed_providers.sql'
+$providerAccountsSql = Join-Path $repoRoot 'supabase/provider_accounts_setup.sql'
 if (-not (Test-Path $cepSql)) { throw "Arquivo não encontrado: $cepSql" }
 if (-not (Test-Path $seedSql)) { throw "Arquivo não encontrado: $seedSql" }
+if (-not (Test-Path $providerAccountsSql)) { throw "Arquivo não encontrado: $providerAccountsSql" }
 
 # 4) Criar tabela e segurança básica (RLS + política leitura pública)
 $createTable = @"
@@ -82,6 +84,10 @@ Write-Host "[setup] Executando script de CEP prefixes..." -ForegroundColor Cyan
 # 6) Seed de dados
 Write-Host "[setup] Inserindo/atualizando seed de fornecedores..." -ForegroundColor Cyan
 & psql "$PgUri" -v ON_ERROR_STOP=1 -f "$seedSql"
+
+# 6.1) provider_accounts + RLS
+Write-Host "[setup] Criando/atualizando tabela provider_accounts e políticas RLS..." -ForegroundColor Cyan
+& psql "$PgUri" -v ON_ERROR_STOP=1 -f "$providerAccountsSql"
 
 # 7) Configurar .env.local
 $envPath = Join-Path $repoRoot '.env.local'
