@@ -121,4 +121,4 @@ Caso a chave não esteja definida ou o arquivo não exista, o tema permanece o p
 - CORS: Supabase já libera o domínio do projeto; adicione o domínio da Vercel se necessário em Project Settings.
 - Segurança: se publicar escrita/updates, ajuste RLS e políticas conforme necessidade.
 
-<!-- redeploy: manual trigger -->
+<!-- redeploy: manual trigger #2 -->
