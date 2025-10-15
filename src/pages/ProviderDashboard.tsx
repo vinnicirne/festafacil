@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { getProviders } from '@/utils/providersSource'
 import { getStore, onStoreChange, setStore } from '@/utils/realtime'
 import { formatMoney, responseRate, calcCommission, type Transaction, type ProviderPlan, PLAN_CONFIG, FESTCOIN_NAME, getPlanLabel, shouldStartNewCycle } from '@/utils/saas'
-import { adjustCoins, getAdminState } from '@/utils/adminStore'
+import { adjustCoins, getAdminState, upsertOrder } from '@/utils/adminStore'
 import { createMpPreference, openCheckout } from '@/utils/payments'
 import { CATEGORIES } from '@/data/categories'
 import { CoinIcon } from '@/components/icons'
@@ -258,6 +258,36 @@ export default function ProviderDashboard(){
     setQuoteOpen(false)
     setQuoteAmount(0)
     if(!l.respondedAt) setLead(selectedLeadIdx, { respondedAt: new Date().toISOString() })
+  }
+
+  // Fechar pedido: registra ordem no AdminState e libera transação
+  const closeOrder = ()=>{
+    if(selectedLeadIdx===null) return
+    const l:any = leads[selectedLeadIdx]
+    const gross = Number(l?.quoteAmount) || 0
+    if(!(gross>0)) { alert('Envie um orçamento antes de fechar o pedido.'); return }
+    const { rate } = calcCommission(gross, plan, { directLink: !!l?.directLink })
+    const currentProvider = providers.find(p=> String(p.id)===String(providerId))
+    if(!providerId || !currentProvider){ alert('Fornecedor inválido. Selecione novamente.'); return }
+    // Registrar pedido no AdminState
+    upsertOrder({
+      id: `ord_${Math.random().toString(36).slice(2)}_${Date.now()}`,
+      providerId: String(providerId),
+      providerName: String(currentProvider.name),
+      clientName: String(l?.nome||'Cliente'),
+      totalBRL: gross,
+      commissionPct: rate,
+      date: String(l?.data || new Date().toISOString()),
+      status: 'fechado'
+    })
+    // Liberar transação vinculada ao lead (se existir)
+    const list = getStore<Transaction[]>('transactions', [])
+    const nextList = list.map(t=> t.leadId===leadKey(l) ? { ...t, status: 'Liberado/Pago' } : t)
+    setStore('transactions', nextList)
+    // Atualizar lead
+    setLead(selectedLeadIdx, { status: 'Pedido Fechado', closedAt: new Date().toISOString() })
+    const msgs = getMsgs(l)
+    setMsgs(l, [...msgs, { from:'vendor', text: `Pedido fechado em ${new Date().toLocaleString('pt-BR')}.`, ts: new Date().toISOString() }])
   }
 
   // Disponibilidade global
@@ -556,7 +586,21 @@ export default function ProviderDashboard(){
                     </div>
                     <div style={{color:'var(--color-muted)'}}>Evento: {l?.data || '-'} • Endereço/CEP: {l?.endereco || l?.cep || '-'}</div>
                     {l?.mensagem && <div style={{whiteSpace:'pre-wrap'}}>{l.mensagem}</div>}
-                    {l?.quoteAmount && <div className="chip">Orçamento enviado: {formatMoney(l.quoteAmount)}</div>}
+                    {l?.quoteAmount && (
+                      <div className="chip" style={{display:'inline-flex', alignItems:'center', gap:8}}>
+                        <span>Orçamento enviado: {formatMoney(l.quoteAmount)}</span>
+                      </div>
+                    )}
+                    {l?.paymentLink && (
+                      <div style={{display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
+                        <button className="btn btn-secondary" onClick={()=> window.open(String(l.paymentLink), '_blank')}>Abrir checkout</button>
+                        <button className="btn" onClick={()=>{ try{ navigator.clipboard.writeText(String(l.paymentLink)); alert('Link copiado!') }catch{ alert('Não foi possível copiar o link.') } }}>Copiar link</button>
+                      </div>
+                    )}
+                    <div style={{display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
+                      <button className="btn btn-primary" disabled={!l?.quoteAmount || !!l?.closedAt} onClick={closeOrder}>Fechar pedido</button>
+                      {l?.closedAt && <span className="chip">Fechado em {new Date(String(l.closedAt)).toLocaleString('pt-BR')}</span>}
+                    </div>
                     {!l?.unlocked && (
                       <div className="card" style={{padding:'.6rem', display:'grid', gap:'.4rem', background:'#f7fbff'}}>
                         <strong>Desbloquear lead</strong>
