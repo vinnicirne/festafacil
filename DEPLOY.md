@@ -81,6 +81,9 @@ Após executar, a busca passa a usar o filtro de prefixo (`contains('cepPrefixes
      - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
      - `VITE_THEME_KEY` (chave do tema que você enviou)
       - Parametrizações de UX como `VITE_NAVBAR_SEARCH_DEBOUNCE_MS`, etc.
+     - `MERCADO_PAGO_ACCESS_TOKEN` (PROD): token de acesso da sua conta Mercado Pago para criar preferências de checkout pelo endpoint `/api/mp/create_preference`.
+       - Alternativas suportadas pelo endpoint (use apenas se necessário): `MP_ACCESS_TOKEN` ou `VITE_MP_ACCESS_TOKEN`.
+       - Para testes em DEV/produção sem configurar env, há fallback pelo navegador: salve o token em `localStorage` com a chave `ff:mp:access_token` (o Admin adiciona um card para isso).
 4. Deploy. A Vercel detecta Vite automaticamente.
 
 ### Tema por chave
@@ -122,3 +125,22 @@ Caso a chave não esteja definida ou o arquivo não exista, o tema permanece o p
 - Segurança: se publicar escrita/updates, ajuste RLS e políticas conforme necessidade.
 
 <!-- redeploy: manual trigger #2 -->
+
+## 5) Pagamentos (Mercado Pago)
+
+- Endpoint serverless: `POST /api/mp/create_preference`
+  - Requer `MERCADO_PAGO_ACCESS_TOKEN` configurada na Vercel.
+  - Corpo mínimo:
+
+```
+{ "items": [ { "title": "Pedido", "quantity": 1, "unit_price": 100 } ] }
+```
+
+- Fallback client-side (apenas para testes):
+  - `src/utils/payments.ts` tenta usar o endpoint; se falhar, lê o token de:
+    - `import.meta.env.VITE_MP_ACCESS_TOKEN`, `window.VITE_MP_ACCESS_TOKEN` ou `localStorage['ff:mp:access_token']`.
+  - No Admin (Painel do Superadmin), há um card para salvar/remover o token no navegador.
+
+- Fluxo no painel do fornecedor:
+  - Envie orçamento; se o token estiver configurado, a preferência é criada e os botões “Abrir checkout”/“Copiar link” ficam ativos.
+  - Após pagamento, finalize com “Fechar pedido” para registrar o pedido e sincronizar transação.

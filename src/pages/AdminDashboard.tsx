@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProviders } from '@/utils/providersSource'
 import { exportCsv } from '@/utils/export'
+import { appendLog } from '@/utils/adminStore'
 
 type Lead = { providerId?: string; providerName?: string; nome: string; contato: string; data: string; cep: string; endereco: string; mensagem?: string; createdAt?: string }
 
@@ -9,10 +10,12 @@ export default function AdminDashboard(){
   const [providers, setProviders] = useState<{id:string, name:string, category:string}[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
   const [pendingCats, setPendingCats] = useState<{suggestion:string, fromBrand?:string, contactEmail?:string, createdAt?:string}[]>([])
+  const [mpToken, setMpToken] = useState('')
 
   useEffect(()=>{ let on=true; getProviders().then(list=>{ if(!on) return; setProviders(list.map(p=>({id:p.id, name:p.name, category:p.category}))) }); return ()=>{ on=false } }, [])
   useEffect(()=>{ try{ const raw = localStorage.getItem('leads'); setLeads(raw? JSON.parse(raw): []) }catch{} }, [])
   useEffect(()=>{ try{ const raw = localStorage.getItem('admin:pendingCategories'); setPendingCats(raw? JSON.parse(raw): []) }catch{} }, [])
+  useEffect(()=>{ try{ setMpToken(localStorage.getItem('ff:mp:access_token') || '') }catch{} }, [])
 
   const stats = useMemo(()=>({
     providers: providers.length,
@@ -25,6 +28,20 @@ export default function AdminDashboard(){
   })))
 
   const clearLeads = ()=>{ localStorage.setItem('leads', JSON.stringify([])); setLeads([]) }
+
+  const saveMpToken = ()=>{
+    try{
+      localStorage.setItem('ff:mp:access_token', (mpToken||'').trim())
+      appendLog('mp:token:set', { length: (mpToken||'').trim().length })
+    }catch{}
+  }
+  const clearMpToken = ()=>{
+    try{
+      localStorage.removeItem('ff:mp:access_token')
+      setMpToken('')
+      appendLog('mp:token:clear')
+    }catch{}
+  }
 
   const approveCat = (idx:number)=>{
     const entry = pendingCats[idx]
@@ -126,6 +143,20 @@ export default function AdminDashboard(){
               ))}
             </div>
           )}
+        </div>
+
+        <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem'}}>
+          <h2 style={{margin:0}}>Pagamentos (Mercado Pago)</h2>
+          <small style={{color:'var(--color-muted)'}}>Para testes: salve o token de acesso no navegador. Em produção, configure a variável de ambiente na Vercel.</small>
+          <label>
+            Token de acesso (MP)
+            <input value={mpToken} onChange={e=> setMpToken(e.target.value)} placeholder="APP_USR-..." style={{width:'100%', padding:'.6rem', border:'1px solid #e6edf1', borderRadius:12}} />
+          </label>
+          <div style={{display:'flex', gap:'.5rem'}}>
+            <button className="btn btn-secondary" onClick={saveMpToken} disabled={!mpToken.trim()}>Salvar token no navegador</button>
+            <button className="btn" onClick={clearMpToken}>Remover token</button>
+            <Link to="/painel/fornecedor?id=1" className="btn">Ir ao painel do fornecedor</Link>
+          </div>
         </div>
       </div>
     </section>
