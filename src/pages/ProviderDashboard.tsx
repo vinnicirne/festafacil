@@ -14,16 +14,7 @@ export default function ProviderDashboard(){
   const navigate = useNavigate()
   const [providers, setProviders] = useState<{id:string, name:string, category:string}[]>([])
   const [providerId, setProviderId] = useState('')
-  // Catálogo simples: Brinquedos e Estações com foto opcional
-  type CatalogItem = { id:string; name:string; photo?:string; createdAt:string }
-  const [brinquedos, setBrinquedos] = useState<CatalogItem[]>([])
-  const [novoBrinquedo, setNovoBrinquedo] = useState('')
-  const [brinquedoPhotoDataUrl, setBrinquedoPhotoDataUrl] = useState<string>('')
-  const [brinquedoPhotoErr, setBrinquedoPhotoErr] = useState<string>('')
-  const [estacoes, setEstacoes] = useState<CatalogItem[]>([])
-  const [novaEstacao, setNovaEstacao] = useState('')
-  const [estacaoPhotoDataUrl, setEstacaoPhotoDataUrl] = useState<string>('')
-  const [estacaoPhotoErr, setEstacaoPhotoErr] = useState<string>('')
+  // Seção de catálogo (Brinquedos/Estações) removida por não ser funcional
 
   // Estado para KPIs/Financeiro/Plano
   const [leads, setLeads] = useState<any[]>([])
@@ -58,6 +49,10 @@ export default function ProviderDashboard(){
   const [srvDetails, setSrvDetails] = useState<string>('')
   const [srvPhotoDataUrl, setSrvPhotoDataUrl] = useState<string>('')
   const [srvPhotoErr, setSrvPhotoErr] = useState<string>('')
+  // Edição de poster (foto) de serviços existentes
+  const [editingPosterFor, setEditingPosterFor] = useState<string | null>(null)
+  const [editPhotoDataUrl, setEditPhotoDataUrl] = useState<string>('')
+  const [editPhotoErr, setEditPhotoErr] = useState<string>('')
 
   useEffect(()=>{ let on=true; getProviders().then(list=>{ if(!on) return; setProviders(list.map(p=>({id:p.id, name:p.name, category:p.category}))) }); return ()=>{ on=false } }, [])
 
@@ -95,30 +90,9 @@ export default function ProviderDashboard(){
 
   useEffect(()=>{
     if(!providerId) return
-    const b = localStorage.getItem(`provider:${providerId}:brinquedos`)
-    const e = localStorage.getItem(`provider:${providerId}:estacoes`)
-    try{
-      const bParsed = b? JSON.parse(b): []
-      const eParsed = e? JSON.parse(e): []
-      const normalize = (arr:any[]): CatalogItem[] => {
-        if(!Array.isArray(arr)) return []
-        // Migração: se salvaram strings antes, converte para objetos
-        if(arr.length>0 && typeof arr[0]==='string'){
-          return (arr as string[]).map(v=> ({ id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: v, createdAt: new Date().toISOString() }))
-        }
-        // Já é objeto
-        return arr as CatalogItem[]
-      }
-      setBrinquedos(normalize(bParsed))
-      setEstacoes(normalize(eParsed))
-    }catch{
-      setBrinquedos([])
-      setEstacoes([])
-    }
+    // Seção de catálogo removida
   }, [providerId])
-
-  useEffect(()=>{ if(providerId) localStorage.setItem(`provider:${providerId}:brinquedos`, JSON.stringify(brinquedos)) }, [brinquedos, providerId])
-  useEffect(()=>{ if(providerId) localStorage.setItem(`provider:${providerId}:estacoes`, JSON.stringify(estacoes)) }, [estacoes, providerId])
+  
 
   // Serviços: carregar e persistir
   useEffect(()=>{
@@ -166,26 +140,7 @@ export default function ProviderDashboard(){
     }
   }, [location.search])
 
-  const addBrinquedo = ()=>{
-    const v = novoBrinquedo.trim(); if(!v) return
-    if(brinquedos.some(x=> x.name.toLowerCase()===v.toLowerCase())){ setNovoBrinquedo(''); setBrinquedoPhotoDataUrl(''); setBrinquedoPhotoErr(''); return }
-    const entry: CatalogItem = { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: v, photo: brinquedoPhotoDataUrl || undefined, createdAt: new Date().toISOString() }
-    setBrinquedos([entry, ...brinquedos])
-    setNovoBrinquedo('')
-    setBrinquedoPhotoDataUrl('')
-    setBrinquedoPhotoErr('')
-  }
-  const delBrinquedo = (id:string)=> setBrinquedos(brinquedos.filter(x=>x.id!==id))
-  const addEstacao = ()=>{
-    const v = novaEstacao.trim(); if(!v) return
-    if(estacoes.some(x=> x.name.toLowerCase()===v.toLowerCase())){ setNovaEstacao(''); setEstacaoPhotoDataUrl(''); setEstacaoPhotoErr(''); return }
-    const entry: CatalogItem = { id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`, name: v, photo: estacaoPhotoDataUrl || undefined, createdAt: new Date().toISOString() }
-    setEstacoes([entry, ...estacoes])
-    setNovaEstacao('')
-    setEstacaoPhotoDataUrl('')
-    setEstacaoPhotoErr('')
-  }
-  const delEstacao = (id:string)=> setEstacoes(estacoes.filter(x=>x.id!==id))
+  // Seção de catálogo removida
 
   const [srvPrice, setSrvPrice] = useState<string>('')
 
@@ -197,7 +152,7 @@ export default function ProviderDashboard(){
     const priceNum = Number((srvPrice||'').replace(/[,]/g,'.'))
     if(!cat){ alert('Selecione uma categoria ou informe sua sugestão.'); return }
     if(!nm){ alert('Informe o nome do serviço.'); return }
-    if(det.length < 10){ alert('Descreva melhor seu serviço (mín. 10 caracteres).'); return }
+    if(det.length < 6){ alert('Descreva melhor seu serviço (mín. 6 caracteres).'); return }
     if(!(priceNum>0)){ alert('Informe um preço válido (R$).'); return }
     const entry: ProviderService = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
@@ -216,6 +171,16 @@ export default function ProviderDashboard(){
     setSrvPhotoErr('')
   }
   const removeService = (id:string)=> setServices(services.filter(s=> s.id!==id))
+  const startEditPoster = (id:string)=>{ setEditingPosterFor(id); setEditPhotoDataUrl(''); setEditPhotoErr('') }
+  const cancelEditPoster = ()=>{ setEditingPosterFor(null); setEditPhotoDataUrl(''); setEditPhotoErr('') }
+  const savePoster = ()=>{
+    if(!editingPosterFor) return
+    const next = services.map(s=> s.id===editingPosterFor ? { ...s, photo: editPhotoDataUrl || s.photo } : s)
+    setServices(next)
+    setEditingPosterFor(null)
+    setEditPhotoDataUrl('')
+    setEditPhotoErr('')
+  }
 
   // KPIs
   const newQuotes = leads.filter(l=> !l.respondedAt).length
@@ -415,12 +380,12 @@ export default function ProviderDashboard(){
       <div id="servicos" className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
         <h2 style={{margin:0}}>Cadastrar meus serviços</h2>
         <p style={{color:'var(--color-muted)'}}>Adicione os serviços que você oferece para aparecer nas buscas e detalhar seu catálogo.</p>
-        <div className="grid grid-lg-2" style={{gap:'.8rem'}}>
+        <div className="grid" style={{gap:'.8rem', alignItems:'start', gridTemplateColumns:'1fr'}}>
           <div className="card auth-form" style={{padding:'1rem', display:'grid', gap:'.9rem', boxShadow:'var(--shadow-md)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+            <div style={{display:'grid', alignItems:'start', gap:'.4rem'}}>
               <strong style={{fontSize:'1.05rem'}}>Cadastro de Serviço</strong>
               {(selectedCat && (selectedCat!=='Outros' || (pendingCat||'').trim())) && (
-                <span className="chip" aria-label="Categoria selecionada">{selectedCat==='Outros' ? (pendingCat||'Nova categoria') : selectedCat}</span>
+                <span className="chip" aria-label="Categoria selecionada" style={{maxWidth:'100%', whiteSpace:'normal', fontSize:'1rem', padding:'.55rem .9rem'}}>{selectedCat==='Outros' ? (pendingCat||'Nova categoria') : selectedCat}</span>
               )}
             </div>
             <label>Categoria do serviço</label>
@@ -478,15 +443,16 @@ export default function ProviderDashboard(){
                   </div>
                 </div>
                 <div>
-                  <button className="btn btn-primary" style={{width:'100%'}} onClick={addService} disabled={!srvName.trim() || srvDetails.trim().length<10 || !(Number((srvPrice||'').replace(/[,]/g,'.'))>0)}>Cadastrar serviço</button>
+                  <button className="btn btn-primary" style={{width:'100%'}} onClick={addService} disabled={!srvName.trim() || srvDetails.trim().length<6 || !(Number((srvPrice||'').replace(/[,]/g,'.'))>0)}>Cadastrar serviço</button>
+                  {(()=>{ const missingName = !srvName.trim(); const priceNum = Number((srvPrice||'').replace(/[,]/g,'.')); const missingPrice = !(priceNum>0); const detLen = srvDetails.trim().length; const missingDetails = detLen < 6; const msgs:string[] = []; if(missingName) msgs.push('nome'); if(missingPrice) msgs.push('preço'); if(missingDetails) msgs.push(`detalhes (+${Math.max(0, 6-detLen)})`); return msgs.length? <small style={{color:'var(--color-muted)', display:'block', marginTop:'.3rem'}}>Falta: {msgs.join(', ')}</small> : null })()}
                 </div>
               </>
             )}
           </div>
           <div className="card" style={{padding:'1rem', display:'grid', gap:'.8rem', boxShadow:'var(--shadow-sm)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+            <div style={{display:'grid', gap:'.4rem'}}>
               <strong style={{fontSize:'1.05rem'}}>Meus serviços</strong>
-              <small style={{color:'var(--color-muted)'}}>Lista pública exibida nas buscas</small>
+              <span className="chip" style={{maxWidth:'100%', whiteSpace:'normal'}}>Lista pública exibida nas buscas</span>
             </div>
             {services.length===0 ? (
               <div className="card" style={{padding:'1rem', textAlign:'center', background:'#f7fbff'}}>
@@ -495,23 +461,51 @@ export default function ProviderDashboard(){
                 <small style={{color:'var(--color-muted)'}}>Use o formulário ao lado para cadastrar.</small>
               </div>
             ) : (
-              <div className="grid" style={{gap:'.6rem', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))'}}>
+              <div className="grid" style={{gap:'.6rem', gridTemplateColumns:'repeat(3, minmax(240px, 1fr))'}}>
                 {services.map(s=> (
                   <article key={s.id} className="card fade-in" style={{padding:'.8rem', display:'grid', gap:'.5rem'}}>
                     {s.photo && (
                       <img src={s.photo} alt={`Foto de ${s.name}`} style={{width:'100%', height:160, objectFit:'cover', borderRadius:12, border:'1px solid #e6edf1'}} />
                     )}
                     <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-                      <div style={{display:'flex', alignItems:'center', gap:'.4rem', flexWrap:'wrap'}}>
-                        <strong>{s.name}</strong>
-                        <span className="chip">{s.category}</span>
+                      <div style={{display:'grid', alignItems:'start', gap:'.4rem', gridTemplateColumns:'1fr'}}>
+                        <span className="chip" style={{justifySelf:'stretch', display:'block', width:'100%', maxWidth:'100%'}}>{s.name}</span>
+                        <span className="chip" style={{justifySelf:'stretch', display:'block', width:'100%', maxWidth:'100%'}}>{s.category}</span>
                         {typeof s.priceFrom==='number' && s.priceFrom>0 && (
-                          <span className="chip">a partir de {formatMoney(s.priceFrom)}</span>
+                          <span className="chip" style={{justifySelf:'stretch', display:'block', width:'100%', maxWidth:'100%'}}>a partir de {formatMoney(s.priceFrom)}</span>
                         )}
-                        {s.pending && <span className="chip" style={{background:'#f59e0b', color:'#fff'}}>Categoria pendente</span>}
+                        {s.pending && <span className="chip" style={{background:'#f59e0b', color:'#fff', justifySelf:'stretch', display:'block', width:'100%', maxWidth:'100%'}}>Categoria pendente</span>}
                       </div>
-                      <button className="btn btn-secondary" onClick={()=> removeService(s.id)}>Remover</button>
+                      <div style={{display:'flex', gap:'.4rem'}}>
+                        <button className="btn" onClick={()=> startEditPoster(s.id)}>Editar poster</button>
+                        <button className="btn btn-secondary" onClick={()=> removeService(s.id)}>Remover</button>
+                      </div>
                     </header>
+                    {editingPosterFor===s.id && (
+                      <div className="card" style={{padding:'.6rem', display:'grid', gap:'.5rem', background:'#f7fbff'}}>
+                        <div style={{display:'grid', gap:'.3rem'}}>
+                          <label>Atualizar poster (foto)</label>
+                          <input type="file" accept="image/*" onChange={e=>{
+                            const file = (e.target as HTMLInputElement).files?.[0]
+                            setEditPhotoErr('')
+                            if(!file){ setEditPhotoDataUrl(''); return }
+                            if(file.size > 1.5*1024*1024){ setEditPhotoErr('Imagem acima de 1.5MB. Escolha outra.'); return }
+                            const reader = new FileReader()
+                            reader.onload = ()=> setEditPhotoDataUrl(String(reader.result||''))
+                            reader.readAsDataURL(file)
+                          }} />
+                          {editPhotoErr && <small style={{color:'var(--color-danger)'}} role="alert">{editPhotoErr}</small>}
+                          {(editPhotoDataUrl || s.photo) && (
+                            <img src={editPhotoDataUrl || s.photo || ''} alt={`Poster de ${s.name}`} style={{width:'100%', maxHeight:180, objectFit:'cover', borderRadius:12, border:'1px solid #e6edf1'}} />
+                          )}
+                        </div>
+                        <div style={{display:'flex', gap:'.4rem', flexWrap:'wrap'}}>
+                          <button className="btn btn-primary" disabled={!editPhotoDataUrl} onClick={savePoster}>Salvar</button>
+                          <button className="btn" onClick={cancelEditPoster}>Cancelar</button>
+                        </div>
+                        <small style={{color:'var(--color-muted)'}}>PNG/JPG até 1.5MB. A imagem será usada nas buscas e no detalhe.</small>
+                      </div>
+                    )}
                     <div style={{color:'var(--color-muted)'}}>{s.details}</div>
                   </article>
                 ))}
@@ -521,123 +515,7 @@ export default function ProviderDashboard(){
         </div>
       </div>
 
-      <div id="catalogo" className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
-        <h2 style={{margin:0}}>Brinquedos e Estações</h2>
-        <p style={{color:'var(--color-muted)'}}>Cadastre itens do seu catálogo com foto opcional. Eles aparecem nas buscas.</p>
-        <div className="grid grid-lg-2" style={{gap:'.8rem'}}>
-          {/* Form Brinquedos */}
-          <div className="card auth-form" style={{padding:'1rem', display:'grid', gap:'.8rem', boxShadow:'var(--shadow-sm)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-              <strong style={{fontSize:'1.05rem'}}>Brinquedos</strong>
-              <span className="chip" aria-live="polite">{brinquedos.length} cadastrados</span>
-            </div>
-            <div>
-              <label>Nome do brinquedo</label>
-              <input value={novoBrinquedo} onChange={e=> setNovoBrinquedo(e.target.value)} placeholder="Ex.: Pula-pula, Piscina de bolinhas" />
-              <small style={{color:'var(--color-muted)'}}>Use um nome claro e comercial.</small>
-            </div>
-            <div>
-              <label>Foto do brinquedo (opcional)</label>
-              <input type="file" accept="image/*" onChange={e=>{
-                const file = e.target.files?.[0]; if(!file){ setBrinquedoPhotoErr(''); return }
-                if(file.size > 1.5*1024*1024){ setBrinquedoPhotoErr('Arquivo muito grande (máx. 1,5MB).'); setBrinquedoPhotoDataUrl(''); return }
-                const r = new FileReader(); r.onload = ()=>{ setBrinquedoPhotoDataUrl(String(r.result||'')); setBrinquedoPhotoErr('') }; r.onerror = ()=> setBrinquedoPhotoErr('Falha ao carregar a imagem.'); r.readAsDataURL(file)
-              }} />
-              {brinquedoPhotoErr && <small role="alert" style={{color:'#b91c1c'}}>{brinquedoPhotoErr}</small>}
-              {brinquedoPhotoDataUrl && (
-                <div className="card" style={{marginTop:'.4rem', padding:'.6rem', display:'grid', gap:'.4rem'}}>
-                  <strong>Pré-visualização</strong>
-                  <img src={brinquedoPhotoDataUrl} alt="Pré-visualização do brinquedo" style={{width:'100%', maxHeight:180, objectFit:'cover', borderRadius:8}} />
-                  <button type="button" className="btn btn-secondary" onClick={()=>{ setBrinquedoPhotoDataUrl(''); setBrinquedoPhotoErr('') }}>Remover foto</button>
-                </div>
-              )}
-            </div>
-            <div>
-              <button className="btn btn-primary" style={{width:'100%'}} onClick={addBrinquedo} disabled={!novoBrinquedo.trim()}>Cadastrar brinquedo</button>
-            </div>
-          </div>
-          {/* Form Estações */}
-          <div className="card auth-form" style={{padding:'1rem', display:'grid', gap:'.8rem', boxShadow:'var(--shadow-sm)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-              <strong style={{fontSize:'1.05rem'}}>Estações</strong>
-              <span className="chip" aria-live="polite">{estacoes.length} cadastradas</span>
-            </div>
-            <div>
-              <label>Nome da estação</label>
-              <input value={novaEstacao} onChange={e=> setNovaEstacao(e.target.value)} placeholder="Ex.: Pipoca, Algodão doce" />
-              <small style={{color:'var(--color-muted)'}}>Use um nome claro e comercial.</small>
-            </div>
-            <div>
-              <label>Foto da estação (opcional)</label>
-              <input type="file" accept="image/*" onChange={e=>{
-                const file = e.target.files?.[0]; if(!file){ setEstacaoPhotoErr(''); return }
-                if(file.size > 1.5*1024*1024){ setEstacaoPhotoErr('Arquivo muito grande (máx. 1,5MB).'); setEstacaoPhotoDataUrl(''); return }
-                const r = new FileReader(); r.onload = ()=>{ setEstacaoPhotoDataUrl(String(r.result||'')); setEstacaoPhotoErr('') }; r.onerror = ()=> setEstacaoPhotoErr('Falha ao carregar a imagem.'); r.readAsDataURL(file)
-              }} />
-              {estacaoPhotoErr && <small role="alert" style={{color:'#b91c1c'}}>{estacaoPhotoErr}</small>}
-              {estacaoPhotoDataUrl && (
-                <div className="card" style={{marginTop:'.4rem', padding:'.6rem', display:'grid', gap:'.4rem'}}>
-                  <strong>Pré-visualização</strong>
-                  <img src={estacaoPhotoDataUrl} alt="Pré-visualização da estação" style={{width:'100%', maxHeight:180, objectFit:'cover', borderRadius:8}} />
-                  <button type="button" className="btn btn-secondary" onClick={()=>{ setEstacaoPhotoDataUrl(''); setEstacaoPhotoErr('') }}>Remover foto</button>
-                </div>
-              )}
-            </div>
-            <div>
-              <button className="btn btn-primary" style={{width:'100%'}} onClick={addEstacao} disabled={!novaEstacao.trim()}>Cadastrar estação</button>
-            </div>
-          </div>
-        </div>
-        {/* Listas públicas */}
-        <div className="grid grid-lg-2" style={{gap:'.8rem'}}>
-          <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem', boxShadow:'var(--shadow-sm)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-              <strong style={{fontSize:'1.05rem'}}>Meus brinquedos</strong>
-              <small style={{color:'var(--color-muted)'}}>Lista pública exibida nas buscas</small>
-            </div>
-            {brinquedos.length===0 ? (
-              <small style={{color:'var(--color-muted)'}}>Nenhum brinquedo cadastrado ainda.</small>
-            ) : (
-              <div className="grid" style={{gap:'.6rem', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))'}}>
-                {brinquedos.map(b => (
-                  <article key={b.id} className="card fade-in" style={{padding:'.8rem', display:'grid', gap:'.5rem'}}>
-                    {b.photo && (
-                      <img src={b.photo} alt={b.name} style={{width:'100%', height:160, objectFit:'cover', borderRadius:12, border:'1px solid #e6edf1'}} />
-                    )}
-                    <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-                      <strong>{b.name}</strong>
-                      <button className="btn btn-secondary" onClick={()=> delBrinquedo(b.id)}>Remover</button>
-                    </header>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem', boxShadow:'var(--shadow-sm)'}}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-              <strong style={{fontSize:'1.05rem'}}>Minhas estações</strong>
-              <small style={{color:'var(--color-muted)'}}>Lista pública exibida nas buscas</small>
-            </div>
-            {estacoes.length===0 ? (
-              <small style={{color:'var(--color-muted)'}}>Nenhuma estação cadastrada ainda.</small>
-            ) : (
-              <div className="grid" style={{gap:'.6rem', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))'}}>
-                {estacoes.map(e => (
-                  <article key={e.id} className="card fade-in" style={{padding:'.8rem', display:'grid', gap:'.5rem'}}>
-                    {e.photo && (
-                      <img src={e.photo} alt={e.name} style={{width:'100%', height:160, objectFit:'cover', borderRadius:12, border:'1px solid #e6edf1'}} />
-                    )}
-                    <header style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
-                      <strong>{e.name}</strong>
-                      <button className="btn btn-secondary" onClick={()=> delEstacao(e.id)}>Remover</button>
-                    </header>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Seção "Brinquedos e Estações" removida por não ser funcional */}
 
       {/* Leads e Pedidos */}
       <div className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>

@@ -33,3 +33,6 @@ export const AUTOCOMPLETE_BLUR_CLOSE_DELAY_MS = num(env.VITE_AUTOCOMPLETE_BLUR_C
 export const PROVIDERS_CACHE_TTL_MS = num(env.VITE_PROVIDERS_CACHE_TTL_MS, 300000)
 // Busca/paginação
 export const SEARCH_PAGE_SIZE = num(env.VITE_SEARCH_PAGE_SIZE, 12)
+
+// Tema
+export const THEME_KEY = env.VITE_THEME_KEY || ''

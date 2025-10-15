@@ -79,8 +79,34 @@ Após executar, a busca passa a usar o filtro de prefixo (`contains('cepPrefixes
 3. Variáveis de ambiente (Project » Settings » Environment Variables):
    - Todas as chaves do `.env.example` que desejar ajustar, em especial:
      - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-     - Parametrizações de UX como `VITE_NAVBAR_SEARCH_DEBOUNCE_MS`, etc.
+     - `VITE_THEME_KEY` (chave do tema que você enviou)
+      - Parametrizações de UX como `VITE_NAVBAR_SEARCH_DEBOUNCE_MS`, etc.
 4. Deploy. A Vercel detecta Vite automaticamente.
+
+### Tema por chave
+
+Este projeto suporta temas via chave configurável (`VITE_THEME_KEY`).
+
+- Onde definir: painel da Vercel (Environment Variables) ou `.env.local` em dev.
+- Arquivo de tema: adicione um JSON em `public/themes/<SUA_CHAVE>.json` com as variáveis:
+
+```
+{
+  "colorPrimary": "#FFC107",
+  "colorPrimaryContrast": "#1A1A1A",
+  "colorSecondary": "#00B8D9",
+  "colorBg": "#F5FBFD",
+  "colorText": "#222",
+  "colorMuted": "#6B7280",
+  "promoBg": "#fff7d6",
+  "promoBorder": "#ffe8a3",
+  "promoText": "#4e3d00"
+}
+```
+
+Ao iniciar, o app tenta carregar `/themes/<VITE_THEME_KEY>.json` e aplica as variáveis CSS dinamicamente, além de atualizar a meta `theme-color`.
+
+Caso a chave não esteja definida ou o arquivo não exista, o tema permanece o padrão (`public/themes/default.json`).
 
 ## 3) Uso do Supabase no código
 

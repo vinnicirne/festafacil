@@ -54,14 +54,15 @@ export default function Modal({ open, onClose, side, title, size='md', closeOnOv
   }, [open])
 
   const widthMap = { sm: '420px', md: '560px', lg: '680px', xl: '820px' } as const
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby={title? titleId: undefined} className="fade-in" style={{position:'fixed', inset:0, background:'rgba(17,24,39,.42)', backdropFilter:'blur(6px)', display:'grid', placeItems: side? 'stretch':'center', zIndex:1000}} onClick={()=>{ if(closeOnOverlay) onClose() }}>
+    <div role="dialog" aria-modal="true" aria-labelledby={title? titleId: undefined} className="fade-in" style={{position:'fixed', inset:0, background:'rgba(17,24,39,.42)', backdropFilter:'blur(6px)', display:'grid', placeItems: (isMobile? 'stretch' : (side? 'stretch':'center')), zIndex:1000}} onClick={()=>{ if(closeOnOverlay) onClose() }}>
       <div role="document" className="card" style={{
-        width: side? 'min(440px, 92vw)':`min(${widthMap[size]}, 92vw)`,
-        height: side? '100%':'auto',
-        maxHeight: side? '100%':'min(80vh, 100%)',
+        width: isMobile? '100vw' : (side? 'min(440px, 92vw)':`min(${widthMap[size]}, 92vw)`),
+        height: isMobile? '100vh' : (side? '100%':'auto'),
+        maxHeight: isMobile? '100vh' : (side? '100%':'min(80vh, 100%)'),
         marginLeft: side? 'auto':'unset',
-        borderRadius: side? '16px 0 0 16px':'16px',
+        borderRadius: isMobile? '0' : (side? '16px 0 0 16px':'16px'),
         overflow:'auto',
         background:'#fff',
         color:'#111',

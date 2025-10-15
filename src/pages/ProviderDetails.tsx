@@ -199,7 +199,6 @@ export default function ProviderDetails(){
                 <div className="card" style={{padding:'.8rem'}}>Excelente serviço! Voltarei a contratar. ⭐⭐⭐⭐⭐</div>
                 <div className="card" style={{padding:'.8rem'}}>Equipe atenciosa e pontual. ⭐⭐⭐⭐</div>
               </div>) },
-            { key:'politicas', label:'Políticas', content: <p>Cancelamento até 7 dias antes do evento com reembolso integral. Termos de serviço disponíveis mediante solicitação.</p> },
           ]}
         />
       </div>

@@ -1,0 +1,11 @@
+{
+  "colorPrimary": "#FFC107",
+  "colorPrimaryContrast": "#1A1A1A",
+  "colorSecondary": "#00B8D9",
+  "colorBg": "#F5FBFD",
+  "colorText": "#222",
+  "colorMuted": "#6B7280",
+  "promoBg": "#fff7d6",
+  "promoBorder": "#ffe8a3",
+  "promoText": "#4e3d00"
+}
