@@ -120,3 +120,5 @@ Caso a chave não esteja definida ou o arquivo não exista, o tema permanece o p
 - Para ambientes: use `.env.local` (dev) e variáveis no painel da Vercel (prod). Não commitar `.env.local`.
 - CORS: Supabase já libera o domínio do projeto; adicione o domínio da Vercel se necessário em Project Settings.
 - Segurança: se publicar escrita/updates, ajuste RLS e políticas conforme necessidade.
+
+<!-- redeploy: manual trigger -->
