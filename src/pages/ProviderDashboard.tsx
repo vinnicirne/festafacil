@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getProviders } from '@/utils/providersSource'
 import { getStore, onStoreChange, setStore } from '@/utils/realtime'
 import { formatMoney, responseRate, calcCommission, type Transaction, type ProviderPlan, PLAN_CONFIG, FESTCOIN_NAME, getPlanLabel, shouldStartNewCycle } from '@/utils/saas'
@@ -7,9 +7,11 @@ import { adjustCoins, getAdminState } from '@/utils/adminStore'
 import { createMpPreference, openCheckout } from '@/utils/payments'
 import { CATEGORIES } from '@/data/categories'
 import { CoinIcon } from '@/components/icons'
+import { signOut } from '@/utils/auth'
 
 export default function ProviderDashboard(){
   const location = useLocation()
+  const navigate = useNavigate()
   const [providers, setProviders] = useState<{id:string, name:string, category:string}[]>([])
   const [providerId, setProviderId] = useState('')
   // Catálogo simples: Brinquedos e Estações com foto opcional
@@ -33,6 +35,15 @@ export default function ProviderDashboard(){
   // Inbox/Chat
   const [selectedLeadIdx, setSelectedLeadIdx] = useState<number | null>(null)
   const [chatText, setChatText] = useState('')
+
+  const doLogout = async ()=>{
+    try{
+      await signOut()
+      navigate('/auth?role=fornecedor&mode=login')
+    }catch(err){
+      alert('Falha ao sair: ' + (err as Error)?.message)
+    }
+  }
   const [quoteOpen, setQuoteOpen] = useState(false)
   const [quoteAmount, setQuoteAmount] = useState<number>(0)
   const [directLink, setDirectLink] = useState<boolean>(false)
@@ -318,7 +329,10 @@ export default function ProviderDashboard(){
     <section className="section" style={{display:'grid', gap:'1rem'}}>
       {/* Visão Geral / KPIs */}
       <div className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
-        <h1 style={{margin:0}}>Painel do Fornecedor</h1>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+          <h1 style={{margin:0}}>Painel do Fornecedor</h1>
+          <button className="btn btn-secondary" onClick={doLogout}>Sair</button>
+        </div>
         {/* Chips de plano e saldo já aparecem no topo (Navbar). Removendo duplicados aqui para evitar redundância visual. */}
         <div id="plan-section" className="card" style={{background:'#f7fbff', padding:'1rem 1.2rem', borderRadius:12}}>
           <div className="stat-grid">

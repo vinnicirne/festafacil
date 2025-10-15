@@ -74,3 +74,11 @@ export async function getMyProviderAccount(): Promise<ProviderAccount | null>{
   if(error) return null
   return data as unknown as ProviderAccount
 }
+
+export async function signOut(): Promise<void>{
+  const sb = getSupabase()
+  if(!sb) return
+  try {
+    await sb.auth.signOut()
+  } catch {}
+}
