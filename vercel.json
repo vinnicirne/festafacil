@@ -6,6 +6,10 @@
     { "src": "/manifest.webmanifest", "dest": "/manifest.webmanifest" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
+  "functions": {
+    "api/**/*.ts": { "runtime": "nodejs18.x" },
+    "api/**/*.js": { "runtime": "nodejs18.x" }
+  },
   "env": {
     "VITE_SUPABASE_URL": "https://xrbaszdvaqwmdqylcpza.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyYmFzemR2YXF3bWRxeWxjcHphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDc5OTAsImV4cCI6MjA3NTkyMzk5MH0.DE-fiDzVniLykEW1X3ITlm3l8OOpsNMpWyy5qS_9Vk8",
