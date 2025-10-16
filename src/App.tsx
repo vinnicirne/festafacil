@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import RequireProvider from './components/RequireProvider'
 import Footer from './components/Footer'
@@ -36,8 +36,7 @@ export default function App() {
             <Route path="/fornecedor/:id" element={<ProviderDetails />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            <Route path="/cadastro-cliente" element={<SignupUser />} />
-            <Route path="/cadastro-fornecedor" element={<SignupProvider />} />
+            <Route path="/cadastro-fornecedor" element={<Navigate to="/auth?role=fornecedor&mode=signup" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/painel/fornecedor" element={<RequireProvider><ProviderDashboard /></RequireProvider>} />
             <Route path="/painel/usuario" element={<UserDashboard />} />

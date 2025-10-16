@@ -86,7 +86,7 @@ export default function LoginModal({ open, onClose, mode='login' }: Props){
           <button className="btn btn-primary" disabled={!canLogin || loading} type="submit">{loading? 'Entrando…':'Entrar'}</button>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
             <button type="button" className="btn" onClick={()=> setStage('reset')} style={{background:'#fff', border:'1px solid #e6edf1'}}>Esqueci a senha</button>
-            <button type="button" className="btn" onClick={()=> { onClose(); navigate('/cadastro-cliente') }} style={{background:'#fff', border:'1px solid #e6edf1'}}>Cadastrar</button>
+            <button type="button" className="btn" onClick={()=> { onClose(); navigate('/auth?mode=signup') }} style={{background:'#fff', border:'1px solid #e6edf1'}}>Cadastrar</button>
           </div>
           <div style={{display:'flex', gap:'.6rem', flexWrap:'wrap'}}>
             <button type="button" className="btn" onClick={()=> startOAuth('google')} style={{border:'2px solid #2b8', color:'#2b8', background:'#fff'}}>Entrar com Google</button>

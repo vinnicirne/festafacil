@@ -77,13 +77,13 @@ export default function Auth(){
     e.preventDefault()
     if(!cAllOk) return
     localStorage.setItem('ff:client', JSON.stringify({ nome:cNome, email:cEmail, phone:cPhone, cep:cCep, addr:cAddr, city:cCity, uf:cUf }))
-    navigate('/cadastro-cliente')
+    navigate('/auth?role=cliente&mode=signup')
   }
   const submitFornecedorPrimeiroPasso = (e:React.FormEvent)=>{
     e.preventDefault()
     if(!fOk) return
     localStorage.setItem('ff:provider:seed', JSON.stringify({ marca:fMarca, doc:fDoc, contato:fContato, email:fEmail, phone:fPhone }))
-    navigate('/cadastro-fornecedor')
+    navigate('/auth?role=fornecedor&mode=signup')
   }
 
   return (
@@ -148,7 +148,7 @@ export default function Auth(){
               O cadastro de fornecedor é feito em um formulário dedicado com 3 etapas.
               Clique abaixo para ir direto para o formulário completo.
             </p>
-            <button className="btn btn-primary" onClick={()=>{ navigate('/cadastro-fornecedor') }}>
+            <button className="btn btn-primary" onClick={()=>{ navigate('/auth?role=fornecedor&mode=signup') }}>
               ir para cadastro de fornecedor
             </button>
           </div>

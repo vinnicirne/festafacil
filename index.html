@@ -47,19 +47,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
+    <script type="module">
+      // Registra o Service Worker somente em produção para evitar interferência no HMR durante o desenvolvimento
+      if (import.meta.env.PROD && 'serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          const swUrl = '/sw.js';
+          const swUrl = '/sw.js'
           navigator.serviceWorker
             .register(swUrl)
             .then((reg) => {
-              console.log('Service Worker registrado:', reg.scope);
+              console.log('Service Worker registrado:', reg.scope)
             })
             .catch((err) => {
-              console.error('Falha ao registrar Service Worker:', err);
-            });
-        });
+              console.error('Falha ao registrar Service Worker:', err)
+            })
+        })
       }
     </script>
   </body>

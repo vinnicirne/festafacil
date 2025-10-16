@@ -1,15 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
-  "routes": [
-    { "src": "/manifest.webmanifest", "dest": "/manifest.webmanifest" },
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/.*", "dest": "/index.html" }
+  "redirects": [
+    { "source": "/cadastro-cliente", "destination": "/auth?role=cliente&mode=signup", "permanent": true },
+    { "source": "/cadastro-fornecedor", "destination": "/auth?role=fornecedor&mode=signup", "permanent": true }
   ]
 }
