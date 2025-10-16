@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import RequireProvider from './components/RequireProvider'
+import RequireAuth from './components/RequireAuth'
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
 
@@ -39,7 +40,7 @@ export default function App() {
             <Route path="/cadastro-fornecedor" element={<Navigate to="/auth?role=fornecedor&mode=signup" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/painel/fornecedor" element={<RequireProvider><ProviderDashboard /></RequireProvider>} />
-            <Route path="/painel/usuario" element={<UserDashboard />} />
+            <Route path="/painel/usuario" element={<RequireAuth><UserDashboard /></RequireAuth>} />
             <Route path="/painel/admin" element={<SuperAdminDashboard />} />
           </Routes>
         </Suspense>

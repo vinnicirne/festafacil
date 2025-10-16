@@ -68,7 +68,7 @@ export async function signUpProvider(input: { email:string; password:string; bra
 // Cria usuário no Supabase Auth e garante sessão ativa.
 // Os dados complementares (nome, contato, endereço) podem ser persistidos
 // localmente por enquanto, já que não há tabela dedicada no backend.
-export async function signUpClient(input: { email:string; password:string }){
+export async function signUpClient(input: { email:string; password:string; nome?:string; contato?:string; cep?:string; endereco?:string; cidade?:string; uf?:string }){
   const sb = getSupabase()
   if(!sb) throw new Error('Supabase não configurado (variáveis VITE_SUPABASE_*)')
   const { data: sign, error: signErr } = await sb.auth.signUp({ email: input.email, password: input.password })
@@ -80,6 +80,21 @@ export async function signUpClient(input: { email:string; password:string }){
     if(signInErr) throw new Error(`${signInErr.message} (confirme o e-mail e tente novamente)`) 
     session = signInData?.session || null
   }
+  const userId = session?.user?.id || sign?.user?.id || null
+  // Tenta persistir perfil em tabela 'user_profiles' se existir
+  try{
+    if(userId){
+      await sb.from('user_profiles').upsert({
+        user_id: userId,
+        nome: input.nome || null,
+        contato: input.contato || null,
+        cep: input.cep || null,
+        endereco: input.endereco || null,
+        cidade: input.cidade || null,
+        uf: input.uf || null
+      } as any, { onConflict: 'user_id' })
+    }
+  }catch{ /* ignora se tabela não existir ou RLS bloquear */ }
   return { userId: session?.user?.id || sign?.user?.id || null }
 }
 

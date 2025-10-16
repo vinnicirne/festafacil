@@ -79,7 +79,16 @@ export default function Auth(){
     if(!cAllOk || cSigning) return
     setCSigning(true)
     try{
-      await signUpClient({ email: cEmail, password: cPwd })
+      await signUpClient({
+        email: cEmail,
+        password: cPwd,
+        nome: cNome,
+        contato: cPhone,
+        cep: cCep,
+        endereco: cAddr,
+        cidade: cCity,
+        uf: cUf
+      })
       // Persistir dados básicos localmente para uso no painel do usuário
       try{
         localStorage.setItem('user:profile', JSON.stringify({ nome: cNome, contato: cPhone }))
