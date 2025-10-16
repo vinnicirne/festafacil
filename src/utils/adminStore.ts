@@ -5,7 +5,7 @@ export type HighlightSub = { providerId: string; providerName: string; active: b
 export type BannerSlot = { id: string; position: string; monthlyPriceBRL: number }
 export type BannerEntry = { id: string; slotId: string; imageUrl: string; linkUrl: string; contractorName: string; startsAt: string; endsAt: string }
 export type Order = { id: string; providerId: string; providerName: string; clientName: string; totalBRL: number; commissionPct: number; date: string; status: 'fechado'|'pendente'|'cancelado' }
-export type Review = { id: string; providerId: string; providerName: string; rating: number; text: string; approved: boolean; createdAt: string }
+export type Review = { id: string; providerId: string; providerName: string; rating: number; text: string; approved: boolean; createdAt: string; clientName?: string }
 export type CategoryOverride = { name: string; active: boolean }
 export type AdminLog = { id: string; ts: string; actor: 'superadmin'; action: string; reason?: string; details?: Record<string, unknown> }
 export type ProviderOverride = { providerId: string; providerName: string; priceFrom?: number; promoPercent?: number; promoLabel?: string; updatedAt: string }
@@ -182,6 +182,15 @@ export function moderateReview(id: string, approved: boolean){
   const idx = st.reviews.findIndex(r=>r.id===id)
   if(idx>=0) { st.reviews[idx].approved = approved; appendLog('review:moderate', { id, approved }) }
   saveAdminState(st)
+}
+
+export function addReview(rec: { providerId: string; providerName: string; rating: number; text: string }){
+  const st = getAdminState()
+  const entry: Review = { id: `rv_${Math.random().toString(36).slice(2)}_${Date.now()}`, providerId: rec.providerId, providerName: rec.providerName, rating: rec.rating, text: rec.text, approved: false, createdAt: new Date().toISOString() }
+  st.reviews.unshift(entry)
+  appendLog('review:add', entry as unknown as Record<string,unknown>)
+  saveAdminState(st)
+  return entry
 }
 
 export function upsertOrder(ord: Order){

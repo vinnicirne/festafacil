@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchViaCEP } from '@/utils/viacep'
+import { getSupabase } from '@/utils/supabase'
 // Removed export to CSV from signup to simplify UI
 
 type ClientForm = {
@@ -38,6 +39,26 @@ export default function SignupUser(){
   })
   const [loadingCep, setLoadingCep] = useState(false)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+  // Prefill from localStorage (data captured in Auth signup step)
+  useEffect(()=>{
+    try{
+      const raw = localStorage.getItem('ff:client')
+      if(raw){
+        const seed = JSON.parse(raw)
+        setForm(prev=> ({
+          ...prev,
+          fullName: seed?.nome || prev.fullName,
+          email: seed?.email || prev.email,
+          phone: seed?.phone || prev.phone,
+          cep: seed?.cep || prev.cep,
+          address: seed?.addr || prev.address,
+          city: seed?.city || prev.city,
+          uf: seed?.uf || prev.uf,
+        }))
+      }
+    }catch{}
+  }, [])
 
   const emailOk = /.+@.+\..+/.test(form.email)
   const pwdOk = form.password.length >= 8
@@ -85,8 +106,8 @@ export default function SignupUser(){
     e.preventDefault()
     if(!allOk) { setTouched({ fullName:true, email:true, password:true, phone:true, cep:true, address:true }); return }
     localStorage.setItem('ff:client', JSON.stringify({ ...form, createdAt: new Date().toISOString() }))
-    // Redireciona para continuidade do fluxo (ex: checkout)
-    navigate('/checkout', { replace: false })
+    // Redireciona para painel do usuário; checkout só quando finalizar uma reserva
+    navigate('/painel/usuario', { replace: false })
   }
 
   // Export removed
@@ -97,12 +118,35 @@ export default function SignupUser(){
       <p style={{margin:'0 0 1rem', color:'var(--text-muted)'}}>Conclua em menos de 2 minutos para solicitar orçamentos.</p>
 
       <div style={{display:'flex', gap:'.6rem', marginBottom:'1rem', flexWrap:'wrap'}}>
-        <button type="button" className="btn btn-primary" aria-label="Continuar com Google" onClick={()=> alert('OAuth Google pendente de integração')}>Continuar com Google</button>
-        <button type="button" className="btn" aria-label="Continuar com Facebook" onClick={()=> alert('OAuth Facebook pendente de integração')}>Facebook</button>
-        <button type="button" className="btn" aria-label="Continuar com Apple" onClick={()=> alert('OAuth Apple pendente de integração')}>Apple</button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          aria-label="Continuar com Google"
+          onClick={async ()=>{
+            const sb = getSupabase()
+            if(!sb){ alert('Login social indisponível: verifique configuração do Supabase'); return }
+            try{
+              const redirectTo = `${window.location.origin}/painel/usuario`
+              await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
+            }catch(err){ alert('Falha ao iniciar login com Google: ' + (err as Error)?.message) }
+          }}
+        >Continuar com Google</button>
+        <button
+          type="button"
+          className="btn"
+          aria-label="Continuar com Facebook"
+          onClick={async ()=>{
+            const sb = getSupabase()
+            if(!sb){ alert('Login social indisponível: verifique configuração do Supabase'); return }
+            try{
+              const redirectTo = `${window.location.origin}/painel/usuario`
+              await sb.auth.signInWithOAuth({ provider: 'facebook', options: { redirectTo } })
+            }catch(err){ alert('Falha ao iniciar login com Facebook: ' + (err as Error)?.message) }
+          }}
+        >Facebook</button>
       </div>
 
-      <form onSubmit={submit} className="card" style={{padding:'1rem', borderRadius:12}}>
+      <form onSubmit={submit} className="card auth-form" style={{padding:'1rem', borderRadius:12}}>
         <div className="grid" style={{display:'grid', gridTemplateColumns:'1fr', gap:'.8rem'}}>
           <div>
             <label>Nome Completo</label>

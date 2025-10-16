@@ -6,7 +6,8 @@ import { formatMoney, responseRate, calcCommission, type Transaction, type Provi
 import { adjustCoins, getAdminState, upsertOrder } from '@/utils/adminStore'
 import { createMpPreference, openCheckout } from '@/utils/payments'
 import { CATEGORIES } from '@/data/categories'
-import { CoinIcon } from '@/components/icons'
+import { CoinIcon, ChatIcon } from '@/components/icons'
+import Modal from '@/components/Modal'
 import { signOut } from '@/utils/auth'
 
 export default function ProviderDashboard(){
@@ -26,6 +27,9 @@ export default function ProviderDashboard(){
   // Inbox/Chat
   const [selectedLeadIdx, setSelectedLeadIdx] = useState<number | null>(null)
   const [chatText, setChatText] = useState('')
+  const [chatTick, setChatTick] = useState(0)
+  const [inboxOpen, setInboxOpen] = useState(false)
+  const [typingMap, setTypingMap] = useState<Record<string, boolean>>({})
 
   const doLogout = async ()=>{
     try{
@@ -84,6 +88,12 @@ export default function ProviderDashboard(){
       }
       if(key==='transactions') setTransactions(getStore('transactions', []))
       if(key==='provider:availabilityUntil') setAvailabilityUntil(getStore('provider:availabilityUntil', null))
+      if(key.startsWith('chat:')) setChatTick(t=> t+1)
+      if(key.startsWith('typing:user:')){
+        const k = key.slice('typing:user:'.length)
+        setTypingMap(prev=> ({...prev, [k]: true}))
+        setTimeout(()=>{ setTypingMap(prev=> ({...prev, [k]: false})) }, 1500)
+      }
     })
     return off
   }, [])
@@ -128,7 +138,7 @@ export default function ProviderDashboard(){
     }
   }, [providerId, providers])
 
-  // Navegação via querystring: view=planos|moedas
+  // Navegação via querystring: view=planos|moedas|mensagens
   useEffect(()=>{
     const sp = new URLSearchParams(location.search)
     const view = sp.get('view') || ''
@@ -137,8 +147,20 @@ export default function ProviderDashboard(){
       setTimeout(()=>{ try{ document.getElementById('plan-section')?.scrollIntoView({ behavior:'smooth', block:'start' }) }catch{} }, 0)
     } else if(view === 'moedas'){
       setTimeout(()=>{ try{ document.getElementById('coins-section')?.scrollIntoView({ behavior:'smooth', block:'start' }) }catch{} }, 0)
+    } else if(view === 'mensagens'){
+      setInboxOpen(true)
+      setTimeout(()=>{ try{ document.getElementById('inbox-section')?.scrollIntoView({ behavior:'smooth', block:'start' }) }catch{} }, 0)
     }
   }, [location.search])
+
+  // Atalho flutuante no mobile para abrir Inbox
+  const [isMobile, setIsMobile] = useState<boolean>(false)
+  useEffect(()=>{
+    const upd = ()=> setIsMobile(window.innerWidth <= 768)
+    upd()
+    window.addEventListener('resize', upd)
+    return ()=> window.removeEventListener('resize', upd)
+  }, [])
 
   // Seção de catálogo removida
 
@@ -210,6 +232,13 @@ export default function ProviderDashboard(){
   const leadKey = (l:any)=> `${(l.providerId||'')}:${(l.contato||'')}:${(l.createdAt||'')}`
   const getMsgs = (l:any)=> getStore<ChatMsg[]>(`chat:${leadKey(l)}`, [] as ChatMsg[])
   const setMsgs = (l:any, msgs:ChatMsg[])=> setStore(`chat:${leadKey(l)}`, msgs)
+  const setReadNowVendor = (l:any)=> setStore(`chat:read:vendor:${leadKey(l)}`, new Date().toISOString())
+  const unreadForLeadVendor = (l:any)=>{
+    const last = getStore<string>(`chat:read:vendor:${leadKey(l)}`, '1970-01-01T00:00:00.000Z')
+    const msgs = getMsgs(l)
+    return msgs.filter(m=> m.from==='user' && Date.parse(m.ts) > Date.parse(last)).length
+  }
+  const totalUnreadVendor = useMemo(()=> (sortedLeads||[]).reduce((sum,l:any)=> sum + unreadForLeadVendor(l), 0), [sortedLeads, chatTick])
 
   const setLead = (idx:number, updates:any)=>{
     const next = [...leads]
@@ -228,6 +257,7 @@ export default function ProviderDashboard(){
     setMsgs(l, next)
     setChatText('')
     if(!l.respondedAt) setLead(selectedLeadIdx, { respondedAt: new Date().toISOString() })
+    setReadNowVendor(l)
   }
 
   const sendQuote = ()=>{
@@ -548,8 +578,11 @@ export default function ProviderDashboard(){
       {/* Seção "Brinquedos e Estações" removida por não ser funcional */}
 
       {/* Leads e Pedidos */}
-      <div className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
-        <h2 style={{margin:0}}>Leads e Pedidos</h2>
+      <div id="inbox-section" className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
+          <h2 style={{margin:0}}>Leads e Pedidos</h2>
+          <button className="btn" onClick={()=> setInboxOpen(true)}>Mensagens</button>
+        </div>
         <div className="grid grid-lg-2">
           <div className="card" style={{padding:'.8rem', display:'grid', gap:'.6rem'}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem', flexWrap:'wrap'}}>
@@ -561,9 +594,9 @@ export default function ProviderDashboard(){
             ) : (
               <div style={{display:'grid', gap:'.4rem'}}>
                 {sortedLeads.map((l:any)=> (
-                  <button key={leadKey(l)} className="chip" onClick={()=> setSelectedLeadIdx(l._idx)} style={{justifyContent:'space-between', display:'flex', background: l.respondedAt? '#fff':'#ffe9e0'}}>
+                  <button key={leadKey(l)} className="chip" onClick={()=> { setSelectedLeadIdx(l._idx); setReadNowVendor(l) }} style={{justifyContent:'space-between', display:'flex', background: l.respondedAt? '#fff':'#ffe9e0'}}>
                     <span>{l.nome || 'Cliente'} • {l.data || '-'} • {l.endereco || l.cep || '-'}</span>
-                    <span style={{color:'var(--color-muted)'}}>{l.status || (l.respondedAt? 'Em negociação':'Novo')}</span>
+                    <span style={{color:'var(--color-muted)'}}>{l.status || (l.respondedAt? 'Em negociação':'Novo')}{(()=>{ const u = unreadForLeadVendor(l); return u>0? ` • ${u} novas` : '' })()}</span>
                   </button>
                 ))}
               </div>
@@ -651,8 +684,9 @@ export default function ProviderDashboard(){
                       </div>
                     ))}
                   </div>
+                  {typingMap[leadKey(leads[selectedLeadIdx])] && <small style={{color:'var(--color-muted)'}}>Cliente digitando…</small>}
                   <div style={{display:'flex', gap:'.4rem'}}>
-                    <input value={chatText} onChange={e=> setChatText(e.target.value)} placeholder="Escreva sua mensagem" onKeyDown={e=> e.key==='Enter' && sendMsg()} style={{flex:1, padding:'.6rem', border:'1px solid #e6edf1', borderRadius:12}} />
+                    <input value={chatText} onChange={e=> { setChatText(e.target.value); try{ setStore(`typing:vendor:${leadKey(leads[selectedLeadIdx])}`, new Date().toISOString()) }catch{} }} placeholder="Escreva sua mensagem" onKeyDown={e=> e.key==='Enter' && sendMsg()} style={{flex:1, padding:'.6rem', border:'1px solid #e6edf1', borderRadius:12}} />
                     <button className="btn btn-secondary" onClick={sendMsg}>Enviar</button>
                     <button className="btn" onClick={()=> setQuoteOpen(v=>!v)}>Enviar orçamento</button>
                   </div>
@@ -678,6 +712,27 @@ export default function ProviderDashboard(){
           </div>
         </div>
       </div>
+
+      <Modal open={inboxOpen} onClose={()=> setInboxOpen(false)}>
+        <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem'}}>
+          <strong>Mensagens</strong>
+          {sortedLeads.filter((l:any)=> getMsgs(l).length>0).length===0 ? (
+            <div style={{color:'var(--color-muted)'}}>Nenhuma conversa ainda. Aguarde leads ou impulsione suas buscas.</div>
+          ) : (
+            <div style={{display:'grid', gap:'.4rem'}}>
+              {sortedLeads.map((l:any)=>{ const msgs = getMsgs(l); if(msgs.length===0) return null; const last = msgs[msgs.length-1]; const unread = unreadForLeadVendor(l); return (
+                <button key={leadKey(l)} className="chip" onClick={()=>{ setSelectedLeadIdx(l._idx); setInboxOpen(false); setReadNowVendor(l) }} style={{display:'flex', justifyContent:'space-between'}}>
+                  <span>{l.nome || 'Cliente'} • {l.data || '-'}</span>
+                  <span style={{color:'var(--color-muted)'}}>{(last?.text||'').slice(0,40)}{unread>0? ` • ${unread} novas`: ''}</span>
+                </button>
+              )})}
+            </div>
+          )}
+          <div style={{display:'flex', justifyContent:'end'}}>
+            <button className="btn" onClick={()=> setInboxOpen(false)}>Fechar</button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Moedas – Compra Avulsa de FestCoins */}
       <div id="coins-section" className="card" style={{padding:'1rem', display:'grid', gap:'.8rem'}}>
@@ -723,6 +778,21 @@ export default function ProviderDashboard(){
           </div>
         )}
       </div>
+      {isMobile && (
+        <button
+          className="btn btn-primary"
+          onClick={()=> setInboxOpen(true)}
+          aria-label="Abrir mensagens"
+          title="Abrir mensagens"
+          style={{position:'fixed', bottom:72, right:16, borderRadius:999, display:'inline-flex', alignItems:'center', gap:8, boxShadow:'var(--shadow-md)'}}
+        >
+          <span style={{display:'inline-flex'}}><ChatIcon /></span>
+          <span>Mensagens</span>
+          {totalUnreadVendor>0 && (
+            <span className="chip" style={{position:'absolute', top:-6, right:-6, background:'#ef4444', color:'#fff', padding:'0 .35rem', borderRadius:999, fontSize:'.75rem'}}>{totalUnreadVendor}</span>
+          )}
+        </button>
+      )}
     </section>
   )
 }

@@ -46,3 +46,12 @@ export function CoinIcon(props: IconProps){
     </svg>
   )
 }
+
+export function ChatIcon(props: IconProps){
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M21 15a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v3l4-2h10l4 2v-3Z" />
+      <path d="M7 7h10" strokeOpacity=".7" />
+    </svg>
+  )
+}

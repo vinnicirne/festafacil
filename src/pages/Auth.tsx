@@ -137,7 +137,7 @@ export default function Auth(){
                 <input value={cCity} onChange={e=> setCCity(e.target.value)} placeholder="Cidade" />
                 <input value={cUf} onChange={e=> setCUf(e.target.value.toUpperCase().slice(0,2))} placeholder="UF" />
               </div>
-              <button className="btn btn-primary" disabled={!cAllOk}>concluir cadastro de contratante</button>
+              <button className="btn btn-primary" disabled={!cAllOk}>continuar cadastro de contratante</button>
             </div>
           </form>
         )}
