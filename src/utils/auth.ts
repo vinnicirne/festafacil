@@ -64,6 +64,25 @@ export async function signUpProvider(input: { email:string; password:string; bra
   return { userId }
 }
 
+// Cadastro de contratante (usuário comum)
+// Cria usuário no Supabase Auth e garante sessão ativa.
+// Os dados complementares (nome, contato, endereço) podem ser persistidos
+// localmente por enquanto, já que não há tabela dedicada no backend.
+export async function signUpClient(input: { email:string; password:string }){
+  const sb = getSupabase()
+  if(!sb) throw new Error('Supabase não configurado (variáveis VITE_SUPABASE_*)')
+  const { data: sign, error: signErr } = await sb.auth.signUp({ email: input.email, password: input.password })
+  if(signErr) throw new Error(signErr.message)
+  // Se a confirmação por e-mail estiver habilitada, talvez não haja sessão imediatamente
+  let session = sign?.session || (await sb.auth.getSession()).data?.session || null
+  if(!session){
+    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email: input.email, password: input.password })
+    if(signInErr) throw new Error(`${signInErr.message} (confirme o e-mail e tente novamente)`) 
+    session = signInData?.session || null
+  }
+  return { userId: session?.user?.id || sign?.user?.id || null }
+}
+
 export async function getMyProviderAccount(): Promise<ProviderAccount | null>{
   const sb = getSupabase()
   if(!sb) return null

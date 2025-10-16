@@ -116,6 +116,7 @@ export default function Navbar(){
   const planLabel = isProviderDashboard && currentProviderId ? getPlanLabel(currentPlan) : null
   const coinsBalance = isProviderDashboard && currentProviderId ? (getAdminState().coins[currentProviderId] || 0) : null
   const [providerLogged, setProviderLogged] = useState<boolean>(false)
+  const [userLogged, setUserLogged] = useState<boolean>(false)
   useEffect(()=>{
     const sb = getSupabase()
     if(!isProviderDashboard){ setProviderLogged(false); return }
@@ -126,6 +127,19 @@ export default function Navbar(){
     sb.auth.getSession().then(({ data })=>{
       setProviderLogged(!!data?.session)
     }).catch(()=> setProviderLogged(false))
+  }, [isProviderDashboard])
+
+  // Estado de login do usuário (contratante) fora do painel de fornecedor
+  useEffect(()=>{
+    const sb = getSupabase()
+    if(isProviderDashboard){ setUserLogged(false); return }
+    if(!sb){
+      try{ setUserLogged(!!localStorage.getItem('user:profile')) }catch{ setUserLogged(false) }
+      return
+    }
+    sb.auth.getSession().then(({ data })=>{
+      setUserLogged(!!data?.session)
+    }).catch(()=> setUserLogged(false))
   }, [isProviderDashboard])
 
   // Ouve recuperação de senha do Supabase e abre o modal no modo de redefinição
@@ -237,6 +251,7 @@ export default function Navbar(){
             </datalist>
           </div>
           )}
+          {(isProviderDashboard ? providerLogged : userLogged) && (
           <button
             className="btn"
             onClick={()=>{
@@ -257,6 +272,7 @@ export default function Navbar(){
               <span aria-live="polite" className="chip" style={{position:'absolute', top:-6, right:-6, background:'#ef4444', color:'#fff', padding:'0 .35rem', borderRadius:999, fontSize:'.75rem'}}>{unreadCount}</span>
             )}
           </button>
+          )}
           {isProviderDashboard && providerLogged && (
             <div style={{display:'flex', alignItems:'center', gap:'.4rem', flexWrap:'wrap'}}>
               <button

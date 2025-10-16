@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { signIn } from '@/utils/auth'
+import { signIn, signUpClient } from '@/utils/auth'
 import { fetchViaCEP } from '@/utils/viacep'
 
 type Role = 'cliente' | 'fornecedor'
@@ -73,11 +73,24 @@ export default function Auth(){
   const [fPwd, setFPwd] = useState('')
   const fOk = fMarca.trim().length>1 && fDoc.replace(/\D/g,'').length>=11 && /.+@.+\..+/.test(fEmail) && fPhone.replace(/\D/g,'').length===11 && fPwd.length>=8 && fContato.trim().length>1
 
-  const submitCliente = (e:React.FormEvent)=>{
+  const [cSigning, setCSigning] = useState(false)
+  const submitCliente = async (e:React.FormEvent)=>{
     e.preventDefault()
-    if(!cAllOk) return
-    localStorage.setItem('ff:client', JSON.stringify({ nome:cNome, email:cEmail, phone:cPhone, cep:cCep, addr:cAddr, city:cCity, uf:cUf }))
-    navigate('/auth?role=cliente&mode=signup')
+    if(!cAllOk || cSigning) return
+    setCSigning(true)
+    try{
+      await signUpClient({ email: cEmail, password: cPwd })
+      // Persistir dados básicos localmente para uso no painel do usuário
+      try{
+        localStorage.setItem('user:profile', JSON.stringify({ nome: cNome, contato: cPhone }))
+        localStorage.setItem('user:ceps', JSON.stringify({ casa: cCep }))
+      }catch{}
+      navigate('/painel/usuario')
+    }catch(err){
+      alert('Falha no cadastro: ' + (err as Error)?.message)
+    }finally{
+      setCSigning(false)
+    }
   }
   const submitFornecedorPrimeiroPasso = (e:React.FormEvent)=>{
     e.preventDefault()
@@ -137,7 +150,7 @@ export default function Auth(){
                 <input value={cCity} onChange={e=> setCCity(e.target.value)} placeholder="Cidade" />
                 <input value={cUf} onChange={e=> setCUf(e.target.value.toUpperCase().slice(0,2))} placeholder="UF" />
               </div>
-              <button className="btn btn-primary" disabled={!cAllOk}>continuar cadastro de contratante</button>
+              <button className="btn btn-primary" disabled={!cAllOk || cSigning}>{cSigning? 'criando cadastro…' : 'continuar cadastro de contratante'}</button>
             </div>
           </form>
         )}
