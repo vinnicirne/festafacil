@@ -21,9 +21,9 @@ export default function RequireProvider({ children }: { children: React.ReactNod
       const sess = data?.session
       if(!sess){ if(alive){ setAllowed(false); setReady(true) } ; return }
       const uid = sess.user?.id
-      const { data: acc, error } = await sb.from('provider_accounts').select('user_id').eq('user_id', uid).limit(1).maybeSingle()
+      const { data: acc, error } = await sb.from('provider_accounts').select('user_id, status').eq('user_id', uid).limit(1).maybeSingle()
       if(error){ if(alive){ setAllowed(false); setReady(true) } ; return }
-      const ok = !!acc?.user_id
+      const ok = !!acc?.user_id && String(acc?.status||'') === 'approved'
       if(alive){ setAllowed(ok); setReady(true) }
     }
     run()

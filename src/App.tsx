@@ -18,6 +18,7 @@ const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'))
 const SignupUser = lazy(() => import('./pages/SignupUser'))
 const SignupProvider = lazy(() => import('./pages/SignupProvider'))
 const Auth = lazy(() => import('./pages/Auth'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 
 export default function App() {
   const location = useLocation()
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
             <Route path="/cadastro-fornecedor" element={<Navigate to="/auth?role=fornecedor&mode=signup" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/verificar-email" element={<VerifyEmail />} />
             <Route path="/painel/fornecedor" element={<RequireProvider><ProviderDashboard /></RequireProvider>} />
             <Route path="/painel/usuario" element={<RequireAuth><UserDashboard /></RequireAuth>} />
             <Route path="/painel/admin" element={<SuperAdminDashboard />} />

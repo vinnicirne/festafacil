@@ -103,6 +103,7 @@ export default function Auth(){
       if(requiresConfirm){
         setNeedsConfirm(true)
         setConfirmEmail(cEmail)
+        try{ navigate(`/verificar-email?email=${encodeURIComponent(cEmail)}`) }catch{}
       }
       alert('Falha no cadastro: ' + msg)
     }finally{
