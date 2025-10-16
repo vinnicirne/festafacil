@@ -19,6 +19,7 @@ import {
   inviteAdmin,
   removeAdminUser,
   activateAdmin,
+  appendLog,
 } from '../utils/adminStore'
 import { getProviders } from '../utils/providersSource'
 import { createMpPreference, openCheckout } from '@/utils/payments'
@@ -37,6 +38,7 @@ export default function SuperAdminDashboard(){
   const [providerQuery, setProviderQuery] = useState('')
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
   const [pendingCats, setPendingCats] = useState<{suggestion:string, fromBrand?:string, contactEmail?:string, createdAt?:string}[]>([])
+  const [mpTestPref, setMpTestPref] = useState<{ id: string; url?: string } | null>(null)
 
   const refreshAdmin = () => setAdmin(getAdminState())
   useEffect(()=>{ getProviders().then(setProviders).catch(()=>setProviders([])) }, [])
@@ -137,6 +139,62 @@ export default function SuperAdminDashboard(){
 
   const MonetizacaoMoedas = (
     <div className="grid" style={{gap:'1rem'}}>
+      <section className="card">
+        <h3>Mercado Pago – Token e Teste</h3>
+        <div style={{display:'grid', gap:'.6rem'}}>
+          <label>Access Token
+            <input id="mp_token" type="text" placeholder="APP_USR-..." defaultValue={(()=>{ try{ return localStorage.getItem('ff:mp:access_token') || '' }catch{ return '' } })()} />
+          </label>
+          <div style={{display:'flex', gap:'.5rem', flexWrap:'wrap'}}>
+            <button className="btn btn-secondary" onClick={()=>{
+              const t = (document.getElementById('mp_token') as HTMLInputElement)?.value?.trim() || ''
+              if(!t){ alert('Informe o token antes de salvar.'); return }
+              try{
+                localStorage.setItem('ff:mp:access_token', t)
+                ;(window as any).VITE_MP_ACCESS_TOKEN = t
+                appendLog('mp:token:save', { length: t.length })
+                alert('Token salvo no navegador (localStorage).')
+              }catch(err){ alert('Falha ao salvar token: ' + (err as Error)?.message) }
+            }}>Salvar token</button>
+            <button className="btn" onClick={()=>{
+              try{
+                localStorage.removeItem('ff:mp:access_token')
+                sessionStorage.removeItem('ff:mp:access_token')
+                ;(window as any).VITE_MP_ACCESS_TOKEN = ''
+                appendLog('mp:token:clear')
+                alert('Token removido do navegador.')
+              }catch(err){ alert('Falha ao limpar token: ' + (err as Error)?.message) }
+            }}>Limpar token</button>
+            <button className="btn btn-primary" onClick={async ()=>{
+              try{
+                const backBase = window.location.origin
+                const pref = await createMpPreference({
+                  items: [{ title: 'Teste de Checkout', quantity: 1, unit_price: 1.0, currency_id: 'BRL' }],
+                  external_reference: 'admin_test',
+                  back_urls: { success: `${backBase}/checkout/success?redirect=admin`, failure: `${backBase}/painel/admin`, pending: `${backBase}/painel/admin` },
+                  auto_return: 'approved',
+                  metadata: { test: true }
+                })
+                const url = pref.sandbox_init_point || pref.init_point
+                setMpTestPref({ id: pref.id, url })
+                appendLog('mp:preference:test:create', { id: pref.id, hasUrl: !!url })
+                alert(`Preferência criada: ${pref.id}`)
+              }catch(err){ alert('Falha ao criar preferência: ' + (err as Error)?.message) }
+            }}>Testar criação de preferência</button>
+          </div>
+          {mpTestPref && (
+            <div className="card" style={{padding:'.6rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.6rem'}}>
+              <small style={{opacity:.8}}>Preferência ID: {mpTestPref.id}</small>
+              <div style={{display:'flex', gap:'.4rem'}}>
+                <button className="btn btn-secondary" disabled={!mpTestPref.url} onClick={()=>{
+                  try{ openCheckout(mpTestPref?.url) }catch(err){ alert('Falha ao abrir checkout: ' + (err as Error)?.message) }
+                }}>Abrir checkout</button>
+              </div>
+            </div>
+          )}
+          <small style={{color:'var(--color-muted)'}}>Produção ideal: configure MERCADO_PAGO_ACCESS_TOKEN no Vercel. Como fallback, salve o token aqui para uso direto no navegador.</small>
+        </div>
+      </section>
       <section className="card">
         <h3>Gestão de FestCoins</h3>
         <div style={{display:'flex', gap:'.5rem'}}>
