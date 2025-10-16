@@ -2,5 +2,8 @@
   "redirects": [
     { "source": "/cadastro-cliente", "destination": "/auth?role=cliente&mode=signup", "permanent": true },
     { "source": "/cadastro-fornecedor", "destination": "/auth?role=fornecedor&mode=signup", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
