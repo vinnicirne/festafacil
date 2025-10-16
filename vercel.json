@@ -8,8 +8,8 @@
     }
   ],
   "routes": [
+    { "src": "/manifest.webmanifest", "dest": "/manifest.webmanifest" },
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/(.*\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|webp|map|json|webmanifest))", "dest": "/$1" },
     { "src": "/.*", "dest": "/index.html" }
   ]
 }
