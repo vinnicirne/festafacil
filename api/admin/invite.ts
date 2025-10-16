@@ -1,8 +1,8 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { createClient } from '@supabase/supabase-js'
 
 // Serverless function to send an admin invitation email via Supabase
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+// Evitar dependência de @vercel/node; usar any no handler
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return
@@ -30,13 +30,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
-    const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, { emailRedirectTo: redirectTo })
+    const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo })
     if (error) {
       res.status(400).json({ error: error.message })
       return
     }
 
-    res.status(200).json({ status: 'invited', email, id: data?.id })
+    res.status(200).json({ status: 'invited', email, id: data?.user?.id })
   } catch (err: any) {
     res.status(500).json({ error: 'Unexpected error', details: err?.message || String(err) })
   }

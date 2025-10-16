@@ -1,6 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+// Evitar dependência de @vercel/node; usar any no handler
+export default async function handler(req: any, res: any) {
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
     const topic = (req.query?.topic as string) || (body?.topic as string) || (body?.type as string) || null

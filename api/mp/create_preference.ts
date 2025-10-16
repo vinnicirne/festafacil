@@ -1,7 +1,7 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+// Tipos de VercelRequest/VercelResponse não são necessários; usar any evita erro TS no build
 
 // Serverless function to create a Mercado Pago Checkout preference
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return
