@@ -7,9 +7,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.MP_ACCESS_TOKEN || process.env.VITE_MP_ACCESS_TOKEN
+  const envCandidates = [
+    'MERCADO_PAGO_ACCESS_TOKEN',
+    'MP_ACCESS_TOKEN',
+    'VITE_MP_ACCESS_TOKEN',
+    // comuns alternativos
+    'MERCADOPAGO_ACCESS_TOKEN',
+    'MERCADOPAGO_TOKEN',
+    'MERCADO_PAGO_TOKEN',
+    'MP_TOKEN',
+  ] as const
+  const accessToken = envCandidates
+    .map((k) => (process.env as Record<string, string | undefined>)[k])
+    .find((v) => !!v && String(v).trim().length > 0)
   if (!accessToken) {
-    res.status(500).json({ error: 'Missing Mercado Pago access token environment variable' })
+    const present = envCandidates.filter((k) => {
+      const v = (process.env as Record<string, string | undefined>)[k]
+      return !!v && String(v).trim().length > 0
+    })
+    res.status(500).json({ error: 'Missing Mercado Pago access token environment variable', tried: envCandidates, present })
     return
   }
 
