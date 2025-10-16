@@ -37,13 +37,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return
     }
 
+    const protocol = (req.headers['x-forwarded-proto'] as string) || 'https'
+    const host = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string) || 'localhost'
+    const baseUrl = `${protocol}://${host}`
+
+    const defaultBackUrls = {
+      success: `${baseUrl}/checkout-success`,
+      pending: `${baseUrl}/checkout-success?state=pending`,
+      failure: `${baseUrl}/checkout?state=failure`,
+    }
+
+    const defaultNotificationUrl = `${baseUrl}/api/mp/notifications`
+
+    const finalPayload = {
+      ...payload,
+      auto_return: payload.auto_return ?? 'approved',
+      back_urls: { ...defaultBackUrls, ...(payload.back_urls ?? payload.redirect_urls ?? {}) },
+      redirect_urls: { ...defaultBackUrls, ...(payload.redirect_urls ?? payload.back_urls ?? {}) },
+      notification_url: payload.notification_url ?? defaultNotificationUrl,
+    }
+
     const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(finalPayload),
     })
 
     const data = await mpRes.json()
