@@ -27,9 +27,13 @@ export default function CheckoutSuccess(){
       <div className="card" style={{padding:'1rem', display:'grid', gap:'.6rem'}}>
         <h2 style={{margin:0}}>Pagamento aprovado!</h2>
         <p>Seu pagamento foi aprovado e o saldo de moedas foi atualizado. Você pode voltar ao painel para continuar gerenciando.</p>
-        <div>
-          <button className="btn btn-primary" onClick={()=> navigate('/painel/admin')}>Voltar ao Painel</button>
-        </div>
+        {(()=>{ const sp = new URLSearchParams(loc.search); const redirect = sp.get('redirect') || ''; const dest = redirect==='provider'? '/painel/fornecedor' : '/painel/admin'; return (
+          <div>
+            <button className="btn btn-primary" onClick={()=> navigate(dest)}>
+              {redirect==='provider'? 'Voltar ao Painel do Fornecedor' : 'Voltar ao Painel'}
+            </button>
+          </div>
+        )})()}
       </div>
     </div>
   )
