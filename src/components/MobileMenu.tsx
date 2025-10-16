@@ -13,11 +13,13 @@ export default function MobileMenu({ open, onClose }: Props){
 
   return (
     <>
-      <div
-        className={`drawer-overlay ${open ? 'open' : ''}`}
-        onClick={onClose}
-        aria-hidden={!open}
-      />
+      {open && (
+        <div
+          className="drawer-overlay open"
+          onClick={onClose}
+          aria-hidden={!open}
+        />
+      )}
       <aside
         className={`drawer ${open ? 'open' : ''}`}
         aria-hidden={!open}
