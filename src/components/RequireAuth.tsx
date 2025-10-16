@@ -10,11 +10,7 @@ export default function RequireAuth({ children }: Props){
 
   useEffect(()=>{
     const sb = getSupabase()
-    if(!sb){
-      // Fallback leve: se não houver backend, usa presença de perfil local
-      try{ setStatus(localStorage.getItem('user:profile')? 'allowed':'blocked') }catch{ setStatus('blocked') }
-      return
-    }
+    if(!sb){ setStatus('blocked'); return }
     sb.auth.getSession().then(({ data })=>{
       setStatus(data?.session? 'allowed':'blocked')
     }).catch(()=> setStatus('blocked'))

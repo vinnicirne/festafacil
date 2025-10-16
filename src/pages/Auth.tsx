@@ -39,6 +39,8 @@ export default function Auth(){
   const [cCity, setCCity] = useState('')
   const [cUf, setCUf] = useState('')
   const [loadingCep, setLoadingCep] = useState(false)
+  const [needsConfirm, setNeedsConfirm] = useState(false)
+  const [confirmEmail, setConfirmEmail] = useState('')
 
   const cValid = useMemo(()=> ({
     nome: cNome.trim().length>2,
@@ -96,7 +98,13 @@ export default function Auth(){
       }catch{}
       navigate('/painel/usuario')
     }catch(err){
-      alert('Falha no cadastro: ' + (err as Error)?.message)
+      const msg = (err as Error)?.message || ''
+      const requiresConfirm = /confirme o e-mail/i.test(msg) || /confirm/i.test(msg)
+      if(requiresConfirm){
+        setNeedsConfirm(true)
+        setConfirmEmail(cEmail)
+      }
+      alert('Falha no cadastro: ' + msg)
     }finally{
       setCSigning(false)
     }
@@ -160,6 +168,20 @@ export default function Auth(){
                 <input value={cUf} onChange={e=> setCUf(e.target.value.toUpperCase().slice(0,2))} placeholder="UF" />
               </div>
               <button className="btn btn-primary" disabled={!cAllOk || cSigning}>{cSigning? 'criando cadastro…' : 'continuar cadastro de contratante'}</button>
+              {needsConfirm && (
+                <div role="status" aria-live="polite" className="alert" style={{marginTop:'.4rem', background:'#fffbea', border:'1px solid #facc15', padding:'.6rem', borderRadius:8}}>
+                  <strong>Confirmação necessária:</strong> enviamos um e-mail para <em>{confirmEmail}</em>.
+                  Após confirmar, volte e faça login. 
+                  <button type="button" className="btn" style={{marginLeft:'.6rem'}} onClick={async ()=>{
+                    try{
+                      const { getSupabase } = await import('@/utils/supabase')
+                      const sb = getSupabase()
+                      if(sb && confirmEmail){ await sb.auth.resend({ type: 'signup', email: confirmEmail }) }
+                      alert('E-mail de confirmação reenviado (se aplicável).')
+                    }catch{ alert('Não foi possível reenviar confirmação agora.') }
+                  }}>reenviar confirmação</button>
+                </div>
+              )}
             </div>
           </form>
         )}

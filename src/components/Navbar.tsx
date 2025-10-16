@@ -13,6 +13,7 @@ import { getStore, onStoreChange } from '@/utils/realtime'
 import { getAdminState } from '@/utils/adminStore'
 import { getPlanLabel, type ProviderPlan, FESTCOIN_NAME } from '@/utils/saas'
 import { getSupabase } from '@/utils/supabase'
+import { signOut } from '@/utils/auth'
 
 export default function Navbar(){
   const { pathname, search } = useLocation()
@@ -120,10 +121,7 @@ export default function Navbar(){
   useEffect(()=>{
     const sb = getSupabase()
     if(!isProviderDashboard){ setProviderLogged(false); return }
-    if(!sb){
-      try{ setProviderLogged(!!localStorage.getItem('ff:provider')) }catch{ setProviderLogged(false) }
-      return
-    }
+    if(!sb){ setProviderLogged(false); return }
     sb.auth.getSession().then(({ data })=>{
       setProviderLogged(!!data?.session)
     }).catch(()=> setProviderLogged(false))
@@ -133,10 +131,7 @@ export default function Navbar(){
   useEffect(()=>{
     const sb = getSupabase()
     if(isProviderDashboard){ setUserLogged(false); return }
-    if(!sb){
-      try{ setUserLogged(!!localStorage.getItem('user:profile')) }catch{ setUserLogged(false) }
-      return
-    }
+    if(!sb){ setUserLogged(false); return }
     sb.auth.getSession().then(({ data })=>{
       setUserLogged(!!data?.session)
     }).catch(()=> setUserLogged(false))
@@ -272,6 +267,27 @@ export default function Navbar(){
               <span aria-live="polite" className="chip" style={{position:'absolute', top:-6, right:-6, background:'#ef4444', color:'#fff', padding:'0 .35rem', borderRadius:999, fontSize:'.75rem'}}>{unreadCount}</span>
             )}
           </button>
+          )}
+          {(isProviderDashboard ? providerLogged : userLogged) && (
+            <button
+              className="btn"
+              onClick={async ()=>{
+                try{ await signOut() }catch{}
+                try{
+                  localStorage.removeItem('user:profile')
+                  localStorage.removeItem('user:ceps')
+                  localStorage.removeItem('ff:provider')
+                  localStorage.removeItem('ff:provider:seed')
+                }catch{}
+                navigate('/auth?mode=login')
+              }}
+              aria-label="Sair"
+              title="Sair"
+              style={{display:'inline-flex', alignItems:'center', gap:6}}
+            >
+              <span aria-hidden>🚪</span>
+              <span>Sair</span>
+            </button>
           )}
           {isProviderDashboard && providerLogged && (
             <div style={{display:'flex', alignItems:'center', gap:'.4rem', flexWrap:'wrap'}}>
