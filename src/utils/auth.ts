@@ -6,7 +6,7 @@ export type ProviderAccount = {
   brand_name: string
   plan: 'GRATIS' | 'START' | 'PROFISSIONAL'
   balance: number
-  status: 'pending' | 'approved' | 'blocked'
+  status: 'active' | 'pending' | 'approved' | 'blocked'
   tax_id: string
   phone: string
   tax_id_valid: boolean
@@ -53,7 +53,7 @@ export async function signUpProvider(input: { email:string; password:string; bra
     brand_name: input.brandName,
     plan: input.plan,
     balance: 0,
-    status: 'pending',
+    status: 'active',
     tax_id: taxIdNormalized,
     phone: input.phone,
     tax_id_valid: taxIdValid,
