@@ -7,7 +7,7 @@ export default function About(){
         <header className="card" style={{padding:'1.4rem'}}>
           <h1 style={{margin:0, fontSize:'1.6rem'}}>O que é a FestaFácil?</h1>
           <p style={{color:'var(--color-muted)', marginTop:'.4rem'}}>
-            Plataforma para contratar fornecedores de eventos de forma direta, sem taxa de intermediação.
+            Plataforma para contratar fornecedores de eventos de forma direta. Cobramos taxa de negociação aplicada ao fechamento do pedido.
             Pesquise por serviço e CEP, converse com o fornecedor e combine pagamento e condições.
           </p>
           <div style={{display:'flex', gap:'.6rem', flexWrap:'wrap', marginTop:'.4rem'}}>
@@ -29,8 +29,8 @@ export default function About(){
           <h2 style={{marginTop:0}}>Vantagens</h2>
           <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'1rem'}}>
             <div className="card" style={{padding:'1rem'}}>
-              <strong>Sem taxa</strong>
-              <p style={{color:'var(--color-muted)'}}>Você paga direto ao fornecedor, sem intermediação.</p>
+              <strong>Taxa transparente</strong>
+              <p style={{color:'var(--color-muted)'}}>Cobramos taxa de negociação aplicada ao fechamento do pedido.</p>
             </div>
             <div className="card" style={{padding:'1rem'}}>
               <strong>Busca por CEP</strong>
