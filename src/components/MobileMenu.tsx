@@ -39,6 +39,7 @@ export default function MobileMenu({ open, onClose }: Props){
             <li><Link to="/busca" onClick={onClose}>Navegar pelo mapa</Link></li>
             <li><Link to="/busca" onClick={onClose}>Destaques</Link></li>
             <li><Link to="/sobre" onClick={onClose}>Sobre</Link></li>
+            <li><Link to="/painel/cliente" onClick={onClose}>Painel do Cliente</Link></li>
           </ul>
 
           <div className="drawer-ctas">

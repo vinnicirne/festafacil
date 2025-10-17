@@ -4,11 +4,12 @@ import { signOut } from '@/utils/auth'
 import Modal from '@/components/Modal'
 import RatingStars from '@/components/RatingStars'
 import { CoinIcon, ChatIcon } from '@/components/icons'
-import { addReview, getAdminState, saveAdminState } from '@/utils/adminStore'
+import { addReview, getAdminState, saveAdminState, upsertOrder } from '@/utils/adminStore'
 import { getStore, setStore, onStoreChange } from '@/utils/realtime'
+import { formatMoney, type Transaction } from '@/utils/saas'
 
 type Profile = { nome: string; contato: string }
-type Lead = { providerId?: string; providerName?: string; nome: string; contato: string; data: string; cep: string; endereco: string; mensagem?: string; createdAt?: string; respondedAt?: string; status?: string; quoteAmount?: number; paymentLink?: string; closedAt?: string; reviewedAt?: string }
+type Lead = { providerId?: string; providerName?: string; nome: string; contato: string; data: string; cep: string; endereco: string; mensagem?: string; createdAt?: string; respondedAt?: string; status?: string; quoteAmount?: number; paymentLink?: string; closedAt?: string; reviewedAt?: string; acceptedAt?: string; declinedAt?: string; orderId?: string }
 type ChatMsg = { from:'user'|'vendor', text:string, ts:string }
 
 export default function UserDashboard(){
@@ -111,8 +112,9 @@ export default function UserDashboard(){
   const statusForLead = (l: Lead)=>{
     const order = adminOrders.find(o=> String(o.providerId)===String(l.providerId) && (!profile.nome || o.clientName===profile.nome))
     const past = l.data && Date.parse(l.data) < Date.now()
-    if(order?.status==='fechado') return past? 'Concluído' : 'Contratado'
-    if(l.paymentLink && order?.status==='pendente') return 'Aguardando Pagamento'
+    if(l.closedAt || order?.status==='fechado') return past? 'Concluído' : 'Contratado'
+    if(l.acceptedAt && l.paymentLink && order?.status==='pendente') return 'Aguardando Pagamento'
+    if(l.acceptedAt && !l.closedAt) return 'Orçamento Aceito'
     if(l.respondedAt) return 'Em Negociação'
     return 'Em Aberto'
   }
@@ -136,6 +138,46 @@ export default function UserDashboard(){
     setMsgs(l, [...msgs, { from:'user', text: t, ts: new Date().toISOString() }])
     setChatText('')
     setReadNow(l)
+  }
+
+  const acceptQuote = (idx: number)=>{
+    const l = sortedLeads[idx]
+    if(!l || !(Number(l.quoteAmount||0)>0)) { alert('Este orçamento não está disponível ou é inválido.'); return }
+    const leadId = `${String(l.providerId||'')}:${String(l.contato||'')}:${String(l.createdAt||'')}`
+    const txList = getStore<Transaction[]>('transactions', [])
+    const tx = txList.find(t=> t.leadId === leadId)
+    const commissionPct = tx && tx.gross>0 ? Math.round((tx.commission/tx.gross)*100)/100 : 0
+    const ordId = `ord_${Math.random().toString(36).slice(2)}_${Date.now()}`
+    upsertOrder({
+      id: ordId,
+      providerId: String(l.providerId||''),
+      providerName: String(l.providerName||'Fornecedor'),
+      clientName: String(profile.nome || l.nome || 'Cliente'),
+      totalBRL: Number(l.quoteAmount||0),
+      commissionPct,
+      date: String(l.data || new Date().toISOString()),
+      status: 'pendente'
+    })
+    const next = [...leads]
+    const baseIdx = leads.indexOf(l)
+    next[baseIdx] = { ...l, status: 'Orçamento Aceito', acceptedAt: new Date().toISOString(), orderId: ordId }
+    setLeads(next)
+    localStorage.setItem('leads', JSON.stringify(next))
+    const msgs = getMsgs(l)
+    setMsgs(l, [...msgs, { from:'user', text: 'Orçamento aceito. Vamos seguir com o pagamento.', ts: new Date().toISOString() }])
+    setOpenChatFor(idx)
+  }
+
+  const declineQuote = (idx: number)=>{
+    const l = sortedLeads[idx]
+    if(!l) return
+    const next = [...leads]
+    const baseIdx = leads.indexOf(l)
+    next[baseIdx] = { ...l, status: 'Cancelado', declinedAt: new Date().toISOString() }
+    setLeads(next)
+    localStorage.setItem('leads', JSON.stringify(next))
+    const msgs = getMsgs(l)
+    setMsgs(l, [...msgs, { from:'user', text: 'Orçamento recusado. Obrigado.', ts: new Date().toISOString() }])
   }
 
   // Abrir Inbox via querystring e atalho flutuante
@@ -259,8 +301,19 @@ export default function UserDashboard(){
                   <div style={{color:'var(--color-muted)'}}>Data: {l.data || '-'} | CEP: {l.cep || '-'}</div>
                   <div style={{color:'var(--color-muted)'}}>Endereço: {l.endereco || '-'}</div>
                   {l.mensagem && <div style={{whiteSpace:'pre-wrap'}}>{l.mensagem}</div>}
+                  {typeof l.quoteAmount==='number' && l.quoteAmount>0 && (
+                    <div className="chip" style={{display:'inline-flex', alignItems:'center', gap:8}}>
+                      Orçamento: {formatMoney(Number(l.quoteAmount))}
+                    </div>
+                  )}
                   <div style={{display:'flex', gap:'.5rem', marginTop:'.3rem'}}>
                     {l.providerId && <Link to={`/fornecedor/${l.providerId}`} className="btn btn-secondary">Recontratar</Link>}
+                    {l.quoteAmount && !l.acceptedAt && !l.closedAt && (
+                      <>
+                        <button className="btn btn-primary" type="button" onClick={()=> acceptQuote(i)}>Aceitar orçamento</button>
+                        <button className="btn" type="button" onClick={()=> declineQuote(i)}>Recusar</button>
+                      </>
+                    )}
                     {l.paymentLink && <Link to={l.paymentLink} className="btn btn-primary">Pagar</Link>}
                     <button className="btn" type="button" onClick={()=> { const next = openChatFor===i? null : i; setOpenChatFor(next); if(next!==null) setReadNow(l) }}>{openChatFor===i? 'Fechar chat' : (unreadForLead(l)>0 ? `Chat (${unreadForLead(l)})` : 'Ver chat')}</button>
                     <button className="btn" type="button" onClick={()=>removeLead(leads.indexOf(l))}>Remover</button>

@@ -12,6 +12,9 @@ const ProviderDetails = lazy(() => import('./pages/ProviderDetails'))
 const Checkout = lazy(() => import('./pages/Checkout'))
 const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess'))
 const ProviderDashboard = lazy(() => import('./pages/ProviderDashboard'))
+const ClientDashboard = lazy(() => import('./pages/ClientDashboard'))
+const ClientOrderDetails = lazy(() => import('./pages/ClientOrderDetails'))
+const AdminMpAudit = lazy(() => import('./pages/AdminMpAudit'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const About = lazy(() => import('./pages/About'))
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'))
@@ -42,8 +45,11 @@ export default function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/verificar-email" element={<VerifyEmail />} />
             <Route path="/painel/fornecedor" element={<RequireProvider><ProviderDashboard /></RequireProvider>} />
-            <Route path="/painel/usuario" element={<RequireAuth><UserDashboard /></RequireAuth>} />
-            <Route path="/painel/admin" element={<SuperAdminDashboard />} />
+        <Route path="/painel/usuario" element={<RequireAuth><UserDashboard /></RequireAuth>} />
+        <Route path="/painel/admin" element={<SuperAdminDashboard />} />
+        <Route path="/painel/cliente" element={<ClientDashboard />} />
+        <Route path="/painel/cliente/pedido/:id" element={<ClientOrderDetails />} />
+        <Route path="/painel/admin/auditoria-mp" element={<AdminMpAudit />} />
           </Routes>
         </Suspense>
       </main>

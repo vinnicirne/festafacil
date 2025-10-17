@@ -246,6 +246,18 @@ export default function Navbar(){
             </datalist>
           </div>
           )}
+          {(!isProviderDashboard && userLogged) && (
+            <Link
+              to="/painel/cliente"
+              className="btn"
+              aria-label="Painel do Cliente"
+              title="Painel do Cliente"
+              style={{display:'inline-flex', alignItems:'center', gap:6}}
+            >
+              <UserIcon />
+              <span>Painel do Cliente</span>
+            </Link>
+          )}
           {(isProviderDashboard ? providerLogged : userLogged) && (
           <button
             className="btn"

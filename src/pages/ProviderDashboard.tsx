@@ -260,7 +260,7 @@ export default function ProviderDashboard(){
     setReadNowVendor(l)
   }
 
-  const sendQuote = ()=>{
+  const sendQuote = async ()=>{
     if(selectedLeadIdx===null) return
     const l:any = leads[selectedLeadIdx]
     const gross = Number(quoteAmount) || 0
@@ -280,11 +280,44 @@ export default function ProviderDashboard(){
     }
     const list = getStore<Transaction[]>('transactions', [])
     setStore('transactions', [...list, tx])
-    const paymentLink = `/checkout?lead=${encodeURIComponent(leadKey(l))}`
-    setLead(selectedLeadIdx, { quoteAmount: gross, quoteSentAt: new Date().toISOString(), status: 'Orçamento Enviado', paymentLink })
-    const msgs = getMsgs(l)
-    const quoteMsg: ChatMsg = { from:'vendor', text: `Orçamento enviado: ${formatMoney(gross)} • Comissão: ${formatMoney(commission)} (${(rate*100).toFixed(0)}%) • Líquido: ${formatMoney(net)} • Link: ${paymentLink}${directLink?' • Link Direto':''}`, ts: new Date().toISOString() }
-    setMsgs(l, [...msgs, quoteMsg])
+    // Criar preferência de pagamento no backend (Vercel) com referência ao lead
+    try{
+      const { createMpPreference, openCheckout } = await import('@/utils/payments')
+      const origin = window.location.origin
+      const external_reference = JSON.stringify({
+        type: 'order',
+        leadId: leadKey(l),
+        providerId: String(l?.providerId||''),
+        providerName: String(l?.providerName||'Fornecedor'),
+        clientName: String(l?.nome||'Cliente'),
+        amount: gross
+      })
+      const pref = await createMpPreference({
+        items: [ { title: 'Pedido Festa Fácil', quantity: 1, currency_id: 'BRL', unit_price: gross } ],
+        external_reference,
+        back_urls: {
+          success: `${origin}/checkout/success?redirect=client`,
+          pending: `${origin}/checkout/success?redirect=client`,
+          failure: `${origin}/checkout/success?redirect=client`
+        },
+        auto_return: 'approved',
+        notification_url: `${origin}/api/mp/webhook`
+      })
+      const paymentLink = pref?.init_point || pref?.sandbox_init_point || `/checkout?lead=${encodeURIComponent(leadKey(l))}`
+      setLead(selectedLeadIdx, { quoteAmount: gross, quoteSentAt: new Date().toISOString(), status: 'Orçamento Enviado', paymentLink })
+      const msgs = getMsgs(l)
+      const quoteMsg: ChatMsg = { from:'vendor', text: `Orçamento enviado: ${formatMoney(gross)} • Comissão: ${formatMoney(commission)} (${(rate*100).toFixed(0)}%) • Líquido: ${formatMoney(net)} • Link: ${paymentLink}`, ts: new Date().toISOString() }
+      setMsgs(l, [...msgs, quoteMsg])
+      // Abre checkout do MP em nova aba (se disponível)
+      try{ openCheckout(pref?.init_point, pref?.sandbox_init_point) }catch{}
+    }catch(err){
+      // Fallback: usar checkout local caso a preferência falhe
+      const paymentLink = `/checkout?lead=${encodeURIComponent(leadKey(l))}`
+      setLead(selectedLeadIdx, { quoteAmount: gross, quoteSentAt: new Date().toISOString(), status: 'Orçamento Enviado', paymentLink })
+      const msgs = getMsgs(l)
+      const quoteMsg: ChatMsg = { from:'vendor', text: `Orçamento enviado: ${formatMoney(gross)} • Comissão: ${formatMoney(commission)} (${(rate*100).toFixed(0)}%) • Líquido: ${formatMoney(net)} • Link: ${paymentLink}`, ts: new Date().toISOString() }
+      setMsgs(l, [...msgs, quoteMsg])
+    }
     setQuoteOpen(false)
     setQuoteAmount(0)
     if(!l.respondedAt) setLead(selectedLeadIdx, { respondedAt: new Date().toISOString() })
